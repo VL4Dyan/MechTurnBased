@@ -8,9 +8,6 @@ ATileChecker::ATileChecker()
 {
  	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
-
-	//CollisionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
-	//CollisionBox->SetBoxExtent(FVector(50, 50, 50), false);
 }
 
 FTileData ATileChecker::Scan(FTileData TileData)
@@ -18,13 +15,16 @@ FTileData ATileChecker::Scan(FTileData TileData)
 	TArray<AActor*> OverlappingResult;
 	CollisionBox->GetOverlappingActors(OverlappingResult);
 
-	//logging start here
-
-	//logging ends here
-
-	if (OverlappingResult.Num() > 0)
+	for (int i = 0; i < OverlappingResult.Num(); i++)
 	{
-		TileData.bIsVoid = false;
+		if (OverlappingResult[i]->IsA<ASpawnPoint>())
+		{
+			TileData.SpawnPoint = Cast<ASpawnPoint>(OverlappingResult[i]);
+		}
+		else
+		{
+			TileData.bIsVoid = false;
+		}
 	}
 
 	return TileData;

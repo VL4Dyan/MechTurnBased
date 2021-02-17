@@ -1,12 +1,12 @@
+
 #pragma once
 
-#include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
-#include "../Units/CombatUnit.h"
+#include "../GridObjects/GridObject.h"
+#include "SpawnPoint.h"
 #include "TileData.generated.h"
 
 USTRUCT(BlueprintType)
-struct MECHTURNBASED_API FTileData
+struct FTileData
 {
 	GENERATED_BODY()
 
@@ -17,8 +17,10 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 		bool bIsVoid = true;
-	UPROPERTY(BlueprintReadOnly)
+	UPROPERTY(BlueprintReadOnly) //These coordinates represent bottom centre of the tile volume
 		FVector AbsoluteCoordinates;
 	UPROPERTY(BlueprintReadWrite)
-		class ACombatUnit* TileHolder = NULL;
+		AGridObject* TileHolder = nullptr;
+	UPROPERTY(BlueprintReadWrite)
+		ASpawnPoint* SpawnPoint = nullptr;
 };

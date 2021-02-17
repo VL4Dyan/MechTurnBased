@@ -4,21 +4,18 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "TileData.h"
-#include "Components/BoxComponent.h"
-#include "TileChecker.generated.h"
+#include "../Teams.h"
+#include "MatrixIndex.h"
+#include "SpawnPoint.generated.h"
 
 UCLASS()
-class MECHTURNBASED_API ATileChecker : public AActor
+class MECHTURNBASED_API ASpawnPoint : public AActor
 {
 	GENERATED_BODY()
 
 public:
 	// Sets default values for this actor's properties
-	ATileChecker();
-	//ATileChecker();
-	UFUNCTION(BlueprintCallable)
-		FTileData Scan(FTileData TileData);
+	ASpawnPoint();
 
 protected:
 	// Called when the game starts or when spawned
@@ -28,10 +25,8 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
-protected:
-	UPROPERTY(BlueprintReadOnly)
-		float TileStep = 100;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+		ETeams Team = ETeams::Team_Player;
 	UPROPERTY(BlueprintReadWrite)
-		UBoxComponent* CollisionBox;
-
+		FMatrixIndex TileIndex = FMatrixIndex(0, 0, 0);
 };

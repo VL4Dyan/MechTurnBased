@@ -3,35 +3,76 @@
 
 #include "CombatMode.h"
 
-void ACombatMode::ScanGrid(UCombatGridManager* combatGridManager, ATileChecker* tileChecker)
+void ACombatMode::ScanGrid(ATileChecker* TileChecker)
 {
-	combatGridManager->BuildGrid();
+	CombatGridManager = NewObject<UCombatGridManager>();
+	CombatGridManager->BuildGrid();
 	int scanRangeX, scanRangeY, scanRangeZ;
-	float tileStep = combatGridManager->TileStep;
-	scanRangeX = combatGridManager->ScanRangeX;
-	scanRangeY = combatGridManager->ScanRangeY;
-	scanRangeZ = combatGridManager->ScanRangeZ;
+	float tileStep = CombatGridManager->TileStep;
+	scanRangeX = CombatGridManager->ScanRangeX;
+	scanRangeY = CombatGridManager->ScanRangeY;
+	scanRangeZ = CombatGridManager->ScanRangeZ;
 
-	for (int indexX = 0; indexX < scanRangeX; indexX++)
+	for (int IndexX = 0; IndexX < scanRangeX; IndexX++)
 	{
-		for (int indexY = 0; indexY < scanRangeY; indexY++)
+		for (int IndexY = 0; IndexY < scanRangeY; IndexY++)
 		{
-			for (int indexZ = 0; indexZ < scanRangeZ; indexZ++)
+			for (int IndexZ = 0; IndexZ < scanRangeZ; IndexZ++)
 			{
-				FMatrixIndexes indexes(indexX, indexY, indexZ);
-				FTileData currentTile;
-				combatGridManager->GetTileDataByIndex(indexes, currentTile);
-				tileChecker->SetActorLocation(currentTile.AbsoluteCoordinates);
+				FMatrixIndex Index(IndexX, IndexY, IndexZ);
+				FTileData CurrentTile;
+				CombatGridManager->TryGetTileDataByIndex(Index, CurrentTile);
+				TileChecker->SetActorLocation(CurrentTile.AbsoluteCoordinates);
+				CurrentTile = TileChecker->Scan(CurrentTile);
 
-				//Log message starts here
-				//FVector vector = tileChecker->GetActorLocation();
-				//FString msg = vector.ToString();
-				//UE_LOG(LogTemp, Warning, TEXT("Checked space: %s"), *msg);
-				//Log message ends here
+				if (CurrentTile.SpawnPoint != nullptr)
+				{
+					CurrentTile.SpawnPoint->TileIndex = Index;
+					SpawnPoints.Add(CurrentTile.SpawnPoint);
+				}
 
-				currentTile = tileChecker->Scan(currentTile);
-				combatGridManager->UpdateTileData(indexes, currentTile);
+				CombatGridManager->TryUpdateTileData(Index, CurrentTile);
 			}
 		}
 	}
+}
+
+bool ACombatMode::PlaceCombatUnitOnGrid(ACombatUnit* CombatUnit, ASpawnPoint* SpawnPoint)
+{
+	FMatrixIndex ResultingSpawnPoint;
+	bool bFunctionSuccess = false;
+
+	if (CombatGridManager->TryGetUnoccupiedTileAroundSpawnPoint(SpawnPoint->TileIndex, ResultingSpawnPoint))
+	{
+		FTileData TileDataToUpdate;
+		if (CombatGridManager->TryGetTileDataByIndex(ResultingSpawnPoint, TileDataToUpdate))
+		{
+			TileDataToUpdate.TileHolder = CombatUnit;
+			CombatUnit->UnitTileIndex = ResultingSpawnPoint;
+			CombatUnit->SetActorLocation(TileDataToUpdate.AbsoluteCoordinates);
+			CombatUnit->UnitOwner = SpawnPoint->Team;
+
+			if (CombatGridManager->TryUpdateTileData(ResultingSpawnPoint, TileDataToUpdate))
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+		else
+		{
+			return false;
+		}
+	}
+	else
+	{
+		return false;
+	}
+}
+
+UCombatGridManager* ACombatMode::GetCombatGridManagerRef()
+{
+	return CombatGridManager;
 }

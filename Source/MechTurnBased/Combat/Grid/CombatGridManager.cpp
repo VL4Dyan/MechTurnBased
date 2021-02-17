@@ -2,6 +2,10 @@
 
 #include "CombatGridManager.h"
 
+UCombatGridManager::UCombatGridManager()
+{
+
+}
 
 void UCombatGridManager::BuildGrid()
 {
@@ -13,17 +17,17 @@ void UCombatGridManager::BuildGrid()
 			GridMatrix[x].Add(TArray<FTileData>());
 			for (int z = 0; z < ScanRangeZ; z++)
 			{
-				GridMatrix[x][y].Add(FTileData(x * TileStep + TileStep / 2, y * TileStep + TileStep / 2, z * TileStep));
+				GridMatrix[x][y].Add(FTileData(x * TileStep + TileStep / 2, y * TileStep + TileStep / 2, z * TileHeight));
 			}
 		}
 	}
 }
 
-bool UCombatGridManager::GetTileDataByIndex(const FMatrixIndexes& indexes, FTileData& tileDataOut)
+bool UCombatGridManager::TryGetTileDataByIndex(const FMatrixIndex& Index, FTileData& OutTileData)
 {
-	if (AreIndexesInRange(indexes))
+	if (IsIndexInRange(Index))
 	{
-		tileDataOut = GridMatrix[indexes.IndexX][indexes.IndexY][indexes.IndexZ];
+		OutTileData = GridMatrix[Index.IndexX][Index.IndexY][Index.IndexZ];
 		return true;
 	}
 	else
@@ -32,15 +36,21 @@ bool UCombatGridManager::GetTileDataByIndex(const FMatrixIndexes& indexes, FTile
 	}
 }
 
-bool UCombatGridManager::ConvertCoordinatesToIndexes(const FVector& coordinates, FMatrixIndexes& indexesOut)
+FMatrixIndex UCombatGridManager::ConvertCoordinatesToIndexes(const FVector& Coordinates)
 {
 	int IndexX, IndexY, IndexZ;
-	IndexX = (int)coordinates.X / TileStep;
-	IndexY = (int)coordinates.Y / TileStep;
-	IndexZ = (int)(coordinates.Z + 0.1 * TileStep) / TileStep;
-	if (IndexX >= 0 && IndexX < ScanRangeX && IndexY >= 0 && IndexY < ScanRangeY && IndexZ >= 0 && IndexZ < ScanRangeZ)
+	IndexX = (int)Coordinates.X / TileStep;
+	IndexY = (int)Coordinates.Y / TileStep;
+	IndexZ = (int)(Coordinates.Z + 0.1 * TileStep) / TileStep;
+	return FMatrixIndex(IndexX, IndexY, IndexZ);
+}
+
+bool UCombatGridManager::TryUpdateTileData(const FMatrixIndex& Index, FTileData TileData)
+{
+	if (IsIndexInRange(Index))
 	{
-		indexesOut = FMatrixIndexes(IndexX, IndexY, IndexZ);
+		TileData.AbsoluteCoordinates = GridMatrix[Index.IndexX][Index.IndexY][Index.IndexZ].AbsoluteCoordinates;
+		GridMatrix[Index.IndexX][Index.IndexY][Index.IndexZ] = TileData;
 		return true;
 	}
 	else
@@ -49,53 +59,9 @@ bool UCombatGridManager::ConvertCoordinatesToIndexes(const FVector& coordinates,
 	}
 }
 
-bool UCombatGridManager::UpdateTileData(const FMatrixIndexes& indexes, FTileData tileData)
+bool UCombatGridManager::IsTileHolderInTileDataNull(FTileData TileData)
 {
-	if (AreIndexesInRange(indexes))
-	{
-		GridMatrix[indexes.IndexX][indexes.IndexY][indexes.IndexZ] = tileData;
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-bool UCombatGridManager::AddCombatUnitOnBattlefield(ACombatUnit* combatUnit)
-{
-	FTileData tile;
-	FMatrixIndexes unitSpawningPoint = CalculateSpawningPoint();
-	bool bCanProceed = AreIndexesInRange(unitSpawningPoint);
-
-	if (bCanProceed)
-	{
-		bCanProceed = GetTileDataByIndex(unitSpawningPoint, tile);
-	}
-
-	if (bCanProceed)
-	{
-		tile.TileHolder = combatUnit;
-		combatUnit->SetActorLocation(tile.AbsoluteCoordinates);
-		UpdateTileData(unitSpawningPoint, tile);
-
-		FString msg = FString::FromInt(unitSpawningPoint.IndexX) + " " + FString::FromInt(unitSpawningPoint.IndexY) + " " + FString::FromInt(unitSpawningPoint.IndexZ);
-		UE_LOG(LogTemp, Warning, TEXT("Spawning point: %s"), *msg);
-
-		return true;
-	}
-	else
-	{
-		FString msg = FString::FromInt(unitSpawningPoint.IndexX) + " " + FString::FromInt(unitSpawningPoint.IndexY) + " " + FString::FromInt(unitSpawningPoint.IndexZ);
-		UE_LOG(LogTemp, Warning, TEXT("Failed Spawning point: %s"), *msg);
-
-		return false;
-	}
-}
-
-bool UCombatGridManager::IsTileHolderInTileDataNull(FTileData tileData)
-{
-	if (tileData.TileHolder == NULL)
+	if (TileData.TileHolder == NULL)
 	{
 		return true;
 	}
@@ -105,139 +71,133 @@ bool UCombatGridManager::IsTileHolderInTileDataNull(FTileData tileData)
 	}
 }
 
-FMatrixIndexes UCombatGridManager::CalculateSpawningPoint()
+bool UCombatGridManager::TryGetUnoccupiedTileAroundSpawnPoint(FMatrixIndex SpawnPointIndex, FMatrixIndex& OutTileIndex)
 {
-	int radius = 0;
+	int Radius = 0;
 
-	if (radius < ScanRangeX) radius = ScanRangeX;
-	if (radius < ScanRangeY) radius = ScanRangeY;
-	if (radius < ScanRangeZ) radius = ScanRangeZ;
+	if (Radius < ScanRangeX) Radius = ScanRangeX;
+	if (Radius < ScanRangeY) Radius = ScanRangeY;
+	if (Radius < ScanRangeZ) Radius = ScanRangeZ;
 
-	for (int r = 0; r < radius; r++)
+	for (int r = 0; r < Radius; r++)
 	{
 		//each loop represents one of the sides of scanned volume
 
 		//lower side
-		for (int x = SpawningPoint.IndexX - r; x <= SpawningPoint.IndexX + r; x++)
+		for (int x = SpawnPointIndex.IndexX - r; x <= SpawnPointIndex.IndexX + r; x++)
 		{
-			int z = SpawningPoint.IndexZ - r;
-			for (int y = SpawningPoint.IndexY - r; y <= SpawningPoint.IndexY + r; y++)
+			int z = SpawnPointIndex.IndexZ - r;
+			for (int y = SpawnPointIndex.IndexY - r; y <= SpawnPointIndex.IndexY + r; y++)
 			{
-				if (x >= 0 && y >= 0 && z >= 0 && x < ScanRangeX && y < ScanRangeY && z < ScanRangeZ)
+				if (AreValuesInRange(x, y, z))
 				{
-					if (!GridMatrix[x][y][z].bIsVoid && GridMatrix[x][y][z].TileHolder == NULL)
+					if (!GridMatrix[x][y][z].bIsVoid && GridMatrix[x][y][z].TileHolder == nullptr)
 					{
-						return FMatrixIndexes(x, y, z);
+						OutTileIndex = FMatrixIndex(x, y, z);
+						return true;
 					}
 				}
 			}
 		}
 
 		//left side
-		for (int y = SpawningPoint.IndexY - r; y <= SpawningPoint.IndexY + r; y++)
+		for (int y = SpawnPointIndex.IndexY - r; y <= SpawnPointIndex.IndexY + r; y++)
 		{
-			int x = SpawningPoint.IndexX - r;
-			for (int z = SpawningPoint.IndexZ - r; z <= SpawningPoint.IndexZ + r; z++)
+			int x = SpawnPointIndex.IndexX - r;
+			for (int z = SpawnPointIndex.IndexZ - r; z <= SpawnPointIndex.IndexZ + r; z++)
 			{
-				if (x >= 0 && y >= 0 && z >= 0 && x < ScanRangeX && y < ScanRangeY && z < ScanRangeZ)
+				if (AreValuesInRange(x, y, z))
 				{
-					if (GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == NULL)
+					if (GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == nullptr)
 					{
-						return FMatrixIndexes(x, y, z);
+						OutTileIndex = FMatrixIndex(x, y, z);
+						return true;
 					}
 				}
 			}
 		}
 
 		//right side
-		for (int y = SpawningPoint.IndexY - r; y <= SpawningPoint.IndexY + r; y++)
+		for (int y = SpawnPointIndex.IndexY - r; y <= SpawnPointIndex.IndexY + r; y++)
 		{
-			int x = SpawningPoint.IndexX + r;
-			for (int z = SpawningPoint.IndexZ - r; z <= SpawningPoint.IndexZ + r; z++)
+			int x = SpawnPointIndex.IndexX + r;
+			for (int z = SpawnPointIndex.IndexZ - r; z <= SpawnPointIndex.IndexZ + r; z++)
 			{
-				if (x >= 0 && y >= 0 && z >= 0 && x < ScanRangeX && y < ScanRangeY && z < ScanRangeZ)
+				if (AreValuesInRange(x, y, z))
 				{
-					if (GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == NULL)
+					if (GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == nullptr)
 					{
-						return FMatrixIndexes(x, y, z);
+						OutTileIndex = FMatrixIndex(x, y, z);
+						return true;
 					}
 				}
 			}
 		}
 
 		//front side
-		for (int x = SpawningPoint.IndexX - r; x <= SpawningPoint.IndexX + r; x++)
+		for (int x = SpawnPointIndex.IndexX - r; x <= SpawnPointIndex.IndexX + r; x++)
 		{
-			int y = SpawningPoint.IndexY - r;
-			for (int z = SpawningPoint.IndexZ - r; z <= SpawningPoint.IndexZ + r; z++)
+			int y = SpawnPointIndex.IndexY - r;
+			for (int z = SpawnPointIndex.IndexZ - r; z <= SpawnPointIndex.IndexZ + r; z++)
 			{
-				if (x >= 0 && y >= 0 && z >= 0 && x < ScanRangeX && y < ScanRangeY && z < ScanRangeZ)
+				if (AreValuesInRange(x, y, z))
 				{
-					if (GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == NULL)
+					if (GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == nullptr)
 					{
-						return FMatrixIndexes(x, y, z);
+						OutTileIndex = FMatrixIndex(x, y, z);
+						return true;
 					}
 				}
 			}
 		}
 
 		//back side
-		for (int x = SpawningPoint.IndexX - r; x <= SpawningPoint.IndexX + r; x++)
+		for (int x = SpawnPointIndex.IndexX - r; x <= SpawnPointIndex.IndexX + r; x++)
 		{
-			int y = SpawningPoint.IndexY + r;
-			for (int z = SpawningPoint.IndexZ - r; z <= SpawningPoint.IndexZ + r; z++)
+			int y = SpawnPointIndex.IndexY + r;
+			for (int z = SpawnPointIndex.IndexZ - r; z <= SpawnPointIndex.IndexZ + r; z++)
 			{
-				if (x >= 0 && y >= 0 && z >= 0 && x < ScanRangeX && y < ScanRangeY && z < ScanRangeZ)
+				if (AreValuesInRange(x, y, z))
 				{
-					if (GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == NULL)
+					if (GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == nullptr)
 					{
-						return FMatrixIndexes(x, y, z);
+						OutTileIndex = FMatrixIndex(x, y, z);
+						return true;
 					}
 				}
 			}
 		}
 
 		//upper side
-		for (int x = SpawningPoint.IndexX - r; x <= SpawningPoint.IndexX + r; x++)
+		for (int x = SpawnPointIndex.IndexX - r; x <= SpawnPointIndex.IndexX + r; x++)
 		{
-			int z = SpawningPoint.IndexZ + r;
-			for (int y = SpawningPoint.IndexY - r; y <= SpawningPoint.IndexY + r; y++)
+			int z = SpawnPointIndex.IndexZ + r;
+			for (int y = SpawnPointIndex.IndexY - r; y <= SpawnPointIndex.IndexY + r; y++)
 			{
-				if (x >= 0 && y >= 0 && z >= 0 && x < ScanRangeX && y < ScanRangeY && z < ScanRangeZ)
+				if (AreValuesInRange(x, y, z))
 				{
-					if (GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == NULL)
+					if (GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == nullptr)
 					{
-						return FMatrixIndexes(x, y, z);
+						OutTileIndex = FMatrixIndex(x, y, z);
+						return true;
 					}
 				}
 			}
 		}
 	}
 
-	return FMatrixIndexes(-1, -1, -1);
+	return false;
 }
 
-// Sets default values
-UCombatGridManager::UCombatGridManager()
-{
-
-}
-
-// Called when the game starts or when spawned
-void UCombatGridManager::BeginPlay()
-{
-	Super::BeginPlay();
-}
-
-bool UCombatGridManager::GetLocationsToMoveThrough(const FMatrixIndexes& startLocationIndexes, const FMatrixIndexes& endLocationIndexes, TArray<FVector>& vectorArrayOut)
+/*bool UCombatGridManager::TryGetLocationsToMoveThrough(const FMatrixIndex& StartLocationIndexes, const FMatrixIndex& EndLocationIndexes, TArray<FVector>& OutVectorArray)
 {
 	TArray<FVector> Result;
 	bool PathIsFound = false;
 	TArray<UPathfindingNode*> OpenList;
 	TArray<UPathfindingNode*> ClosedList;
-	float EstimatedCost = sqrt(pow(startLocationIndexes.IndexX - endLocationIndexes.IndexX, 2) + pow(startLocationIndexes.IndexY - endLocationIndexes.IndexY, 2) + pow(startLocationIndexes.IndexZ - endLocationIndexes.IndexZ, 2));
+	float EstimatedCost = sqrt(pow(StartLocationIndexes.IndexX - EndLocationIndexes.IndexX, 2) + pow(StartLocationIndexes.IndexY - EndLocationIndexes.IndexY, 2) + pow(StartLocationIndexes.IndexZ - EndLocationIndexes.IndexZ, 2));
 	UPathfindingNode* CurrentNode = NewObject<UPathfindingNode>();
-	CurrentNode->Initialize(startLocationIndexes, EstimatedCost);
+	CurrentNode->Initialize(StartLocationIndexes, EstimatedCost);
 	CurrentNode->SetNewCurrentCost(0);
 	OpenList.Add(CurrentNode);
 
@@ -247,14 +207,14 @@ bool UCombatGridManager::GetLocationsToMoveThrough(const FMatrixIndexes& startLo
 			return A < B;
 		});
 		CurrentNode = OpenList[0];
-		if (CurrentNode->Indexes == endLocationIndexes)
+		if (CurrentNode->Indexes == EndLocationIndexes)
 		{
 			PathIsFound = true;
 			break;
 		}
 		ClosedList.Add(CurrentNode);
 		OpenList.RemoveAt(0);
-		TArray<UPathfindingNode*> Neighbors = GetNeighbors(CurrentNode, endLocationIndexes);
+		TArray<UPathfindingNode*> Neighbors = GetNeighbors(CurrentNode, EndLocationIndexes);
 
 		for (int i = 0; i < Neighbors.Num(); i++)
 		{
@@ -295,7 +255,7 @@ bool UCombatGridManager::GetLocationsToMoveThrough(const FMatrixIndexes& startLo
 	while (CurrentNode != nullptr && PathIsFound)
 	{
 		FTileData Temp;
-		PathIsFound = GetTileDataByIndex(CurrentNode->Indexes, Temp);
+		PathIsFound = TryGetTileDataByIndex(CurrentNode->Indexes, Temp);
 		if (PathIsFound)
 		{
 			Result.Add(Temp.AbsoluteCoordinates);
@@ -316,14 +276,14 @@ bool UCombatGridManager::GetLocationsToMoveThrough(const FMatrixIndexes& startLo
 		}
 	}
 
-	vectorArrayOut = ReversedResult;
+	OutVectorArray = ReversedResult;
 	return PathIsFound;
 }
 
-TArray<UPathfindingNode*> UCombatGridManager::GetNeighbors(UPathfindingNode* currentNode, FMatrixIndexes destinationPoint)
+TArray<UPathfindingNode*> UCombatGridManager::GetNeighbors(UPathfindingNode* CurrentNode, FMatrixIndex DestinationPoint)
 {
 	TArray<UPathfindingNode*> Neighbors;
-	FMatrixIndexes Centre = currentNode->Indexes;
+	FMatrixIndex Centre = CurrentNode->Indexes;
 
 	//upper level
 	int z = Centre.IndexZ + 1;
@@ -331,13 +291,13 @@ TArray<UPathfindingNode*> UCombatGridManager::GetNeighbors(UPathfindingNode* cur
 	{
 		for (int y = Centre.IndexY - 1; y <= Centre.IndexY + 1; y++)
 		{
-			if (x >= 0 && y >= 0 && z >= 0 && x < ScanRangeX && y < ScanRangeY && z < ScanRangeZ)
+			if (AreValuesInRange(x, y, z))
 			{
 				if (GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == nullptr)
 				{
-					float EstimatedValue = sqrt(pow(x - destinationPoint.IndexX, 2) + pow(y - destinationPoint.IndexY, 2) + pow(z - destinationPoint.IndexZ, 2));
+					float EstimatedValue = sqrt(pow(x - DestinationPoint.IndexX, 2) + pow(y - DestinationPoint.IndexY, 2) + pow(z - DestinationPoint.IndexZ, 2));
 					UPathfindingNode* neighbor = NewObject<UPathfindingNode>();
-					neighbor->Initialize(FMatrixIndexes(x, y, z), EstimatedValue);
+					neighbor->Initialize(FMatrixIndex(x, y, z), EstimatedValue);
 					Neighbors.Add(neighbor);
 				}
 			}
@@ -349,13 +309,13 @@ TArray<UPathfindingNode*> UCombatGridManager::GetNeighbors(UPathfindingNode* cur
 	{
 		for (int y = Centre.IndexY - 1; y <= Centre.IndexY + 1; y++)
 		{
-			if (x >= 0 && y >= 0 && z >= 0 && x < ScanRangeX && y < ScanRangeY && z < ScanRangeZ && !(x == Centre.IndexX && y == Centre.IndexY && z == Centre.IndexZ))
+			if (AreValuesInRange(x, y, z))
 			{
-				if (GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == nullptr)
+				if (!(x == Centre.IndexX && y == Centre.IndexY && z == Centre.IndexZ) && GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == nullptr)
 				{
-					float EstimatedValue = sqrt(pow(x - destinationPoint.IndexX, 2) + pow(y - destinationPoint.IndexY, 2) + pow(z - destinationPoint.IndexZ, 2));
+					float EstimatedValue = sqrt(pow(x - DestinationPoint.IndexX, 2) + pow(y - DestinationPoint.IndexY, 2) + pow(z - DestinationPoint.IndexZ, 2));
 					UPathfindingNode* neighbor = NewObject<UPathfindingNode>();
-					neighbor->Initialize(FMatrixIndexes(x, y, z), EstimatedValue);
+					neighbor->Initialize(FMatrixIndex(x, y, z), EstimatedValue);
 					Neighbors.Add(neighbor);
 				}
 			}
@@ -367,13 +327,13 @@ TArray<UPathfindingNode*> UCombatGridManager::GetNeighbors(UPathfindingNode* cur
 	{
 		for (int y = Centre.IndexY - 1; y <= Centre.IndexY + 1; y++)
 		{
-			if (x >= 0 && y >= 0 && z >= 0 && x < ScanRangeX && y < ScanRangeY && z < ScanRangeZ)
+			if (AreValuesInRange(x, y, z))
 			{
 				if (GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == nullptr)
 				{
-					float EstimatedValue = sqrt(pow(x - destinationPoint.IndexX, 2) + pow(y - destinationPoint.IndexY, 2) + pow(z - destinationPoint.IndexZ, 2));
+					float EstimatedValue = sqrt(pow(x - DestinationPoint.IndexX, 2) + pow(y - DestinationPoint.IndexY, 2) + pow(z - DestinationPoint.IndexZ, 2));
 					UPathfindingNode* neighbor = NewObject<UPathfindingNode>();
-					neighbor->Initialize(FMatrixIndexes(x, y, z), EstimatedValue);
+					neighbor->Initialize(FMatrixIndex(x, y, z), EstimatedValue);
 					Neighbors.Add(neighbor);
 				}
 			}
@@ -381,28 +341,34 @@ TArray<UPathfindingNode*> UCombatGridManager::GetNeighbors(UPathfindingNode* cur
 	}
 
 	return Neighbors;
-}
+}*/
 
-bool UCombatGridManager::SwapTileHolders(const FMatrixIndexes& tileOneIndexes, const FMatrixIndexes& tileTwoIndexes)
+bool UCombatGridManager::SwapTileHolders(const FMatrixIndex& TileOneIndex, const FMatrixIndex& TileTwoIndex)
 {
 	bool FunctionSuccess = false;
-	ACombatUnit* Temp = NULL;
+	AGridObject* Temp = nullptr;
 	FTileData TileOne;
-	FunctionSuccess = GetTileDataByIndex(tileOneIndexes, TileOne);
 	FTileData TileTwo;
-	FunctionSuccess = GetTileDataByIndex(tileTwoIndexes, TileTwo);
+
+	FunctionSuccess = TryGetTileDataByIndex(TileOneIndex, TileOne);
+	FunctionSuccess = TryGetTileDataByIndex(TileTwoIndex, TileTwo);
+
 	Temp = TileOne.TileHolder;
 	TileOne.TileHolder = TileTwo.TileHolder;
 	TileTwo.TileHolder = Temp;
-	FunctionSuccess = UpdateTileData(tileOneIndexes, TileOne);
-	FunctionSuccess = UpdateTileData(tileTwoIndexes, TileTwo);
+
+	if (FunctionSuccess)
+	{
+		FunctionSuccess = TryUpdateTileData(TileOneIndex, TileOne);
+		FunctionSuccess = TryUpdateTileData(TileTwoIndex, TileTwo);
+	}
 
 	return FunctionSuccess;
 }
 
-bool UCombatGridManager::AreIndexesInRange(const FMatrixIndexes& indexes)
+bool UCombatGridManager::IsIndexInRange(const FMatrixIndex& Index)
 {
-	if (indexes.IndexX >= 0 && indexes.IndexY >= 0 && indexes.IndexZ >= 0 && indexes.IndexX < ScanRangeX && indexes.IndexY < ScanRangeY && indexes.IndexZ < ScanRangeZ)
+	if (Index.IndexX >= 0 && Index.IndexY >= 0 && Index.IndexZ >= 0 && Index.IndexX < ScanRangeX && Index.IndexY < ScanRangeY && Index.IndexZ < ScanRangeZ)
 	{
 		return true;
 	}
@@ -410,4 +376,66 @@ bool UCombatGridManager::AreIndexesInRange(const FMatrixIndexes& indexes)
 	{
 		return false;
 	}
+}
+
+bool UCombatGridManager::AreValuesInRange(const int& IndexX, const int& IndexY, const int& IndexZ)
+{
+	if (IndexX >= 0 && IndexY >= 0 && IndexZ >= 0 && IndexX < ScanRangeX && IndexY < ScanRangeY && IndexZ < ScanRangeZ)
+	{
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+/*TArray<FMatrixIndex> UCombatGridManager::GetReachableTileIndexesForWalker(FMatrixIndex UnitTileIndexes, int UnitMovingDistance)
+{
+	TArray<FMatrixIndex> OpenList;
+	TArray<FMatrixIndex> ClosedList;
+	int MovesLeft = UnitMovingDistance;
+	OpenList.Add(UnitTileIndexes);
+
+	while (OpenList.Num() > 0 && MovesLeft > 0)
+	{
+		MovesLeft--;
+
+		//from lower to upper, excluding the center
+		for (int z = OpenList[0].IndexZ - 1; z <= OpenList[0].IndexZ + 1; z++)
+		{
+			for (int x = OpenList[0].IndexX - 1; x <= OpenList[0].IndexX + 1; x++)
+			{
+				for (int y = OpenList[0].IndexY - 1; y <= OpenList[0].IndexY + 1; y++)
+				{
+					if (AreValuesInRange(x, y, z))
+					{
+						if (!(x == UnitTileIndexes.IndexX && y == UnitTileIndexes.IndexY) && GridMatrix[x][y][z].bIsVoid == false && GridMatrix[x][y][z].TileHolder == nullptr)
+						{
+							FMatrixIndex IndexesToCheck = FMatrixIndex(x, y, z);
+							if (!ClosedList.Contains(IndexesToCheck) || !ClosedList.Contains(IndexesToCheck))
+							{
+								OpenList.Add(IndexesToCheck);
+							}
+						}
+					}
+				}
+			}
+		}
+		ClosedList.Add(OpenList[0]);
+		OpenList.RemoveAt(0);
+	}
+
+	if (ClosedList.Num() > 0)
+	{
+		ClosedList.RemoveAt(0);
+	}
+
+	return ClosedList;
+}*/
+
+void UCombatGridManager::GetTileMeasurments(float& OutTileWidthLength, float& OutTileHeight)
+{
+	OutTileWidthLength = TileStep;
+	OutTileHeight = TileHeight;
 }
