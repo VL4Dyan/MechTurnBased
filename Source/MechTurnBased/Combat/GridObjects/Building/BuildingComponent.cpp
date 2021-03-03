@@ -1,5 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+
 #include "BuildingComponent.h"
 
 UBuildingComponent::UBuildingComponent()
@@ -25,8 +26,10 @@ bool UBuildingComponent::IsComponentABase()
 	return bIsABase;
 }
 
-void UBuildingComponent::RemoveConnectionToComponent(UBuildingComponent* ComponentRefToRemove)
+TArray<UBuildingComponent*> UBuildingComponent::RemoveConnectionToComponent(UBuildingComponent* ComponentRefToRemove)
 {
+	TArray<UBuildingComponent*> Result;
+
 	for (int i = 0; i < NextComponents.Num(); i++)
 	{
 		if (NextComponents[i] == ComponentRefToRemove)
@@ -45,16 +48,38 @@ void UBuildingComponent::RemoveConnectionToComponent(UBuildingComponent* Compone
 		}
 	}
 
-	TryToDestroyYourself();
+	if (PreviousComponents.Num() == 0 && !bIsABase)
+	{
+		Result.Add(this);
+
+		for (UBuildingComponent* NextComp : NextComponents)
+		{
+			Result.Append(NextComp->RemoveConnectionToComponent(this));
+		}
+
+		FTileData TileDataToUpdate;
+		CombatGridManagerRef->TryGetTileDataByIndex(OccupiedTileIndex, TileDataToUpdate);
+		TileDataToUpdate.TileHolder = nullptr;
+		CombatGridManagerRef->TryUpdateTileData(OccupiedTileIndex, TileDataToUpdate);
+	}
+
+	return Result;
 }
 
 bool UBuildingComponent::TryToDestroyYourself()
 {
-	if ((PreviousComponents.Num() == 0 && !bIsABase) || ComponentState.HullPoints == 0)
+	if (ComponentState.HullPoints == 0)
 	{
+		TArray<UBuildingComponent*> ComponentsWithoutBaseConnection;
+
 		for (UBuildingComponent* Component : NextComponents)
 		{
-			Component->RemoveConnectionToComponent(this);
+			ComponentsWithoutBaseConnection.Append(Component->RemoveConnectionToComponent(this));
+		}
+
+		for (UBuildingComponent* Component : ComponentsWithoutBaseConnection)
+		{
+			Component->TryToFall();
 		}
 
 		FTileData TileDataToUpdate;
@@ -64,8 +89,38 @@ bool UBuildingComponent::TryToDestroyYourself()
 
 		DeactivateComponent();
 
-		CollisionBoxRef->DestroyComponent();
-		this->DestroyComponent();
+		CollisionBoxRef->Deactivate();
+		bIsDestroyed = true;
+
+		return true;
+	}
+
+	return false;
+}
+
+bool UBuildingComponent::TryToFall()
+{
+	if (PreviousComponents.Num() == 0 && !bIsABase)
+	{
+		FTileData CurrTileData;
+		FMatrixIndex CurrTileIndex = FMatrixIndex(OccupiedTileIndex.IndexX, OccupiedTileIndex.IndexY, OccupiedTileIndex.IndexZ - 1);
+
+		while (CombatGridManagerRef->TryGetTileDataByIndex(CurrTileIndex, CurrTileData))
+		{
+			if (CurrTileData.TileHolder != nullptr)
+			{
+				CurrTileData.TileHolder->ApplyEnvironmentalDamage(CurrTileIndex, 1);
+				break;
+			}
+
+			if (!CurrTileData.bIsVoid)
+			{
+				break;
+			}
+		}
+
+		CollisionBoxRef->Deactivate();
+		bIsDestroyed = true;
 
 		return true;
 	}
@@ -130,4 +185,10 @@ void UBuildingComponent::DeactivateComponent()
 		}
 	}
 }
+
+bool UBuildingComponent::IsComponentDestroyed()
+{
+	return bIsDestroyed;
+}
+
 

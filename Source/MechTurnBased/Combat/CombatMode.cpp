@@ -39,7 +39,7 @@ void ACombatMode::ScanGrid(ATileChecker* TileChecker)
 
 bool ACombatMode::PlaceCombatUnitOnGrid(ACombatUnit* CombatUnit, ASpawnPoint* SpawnPoint)
 {
-	FMatrixIndex ResultingSpawnPoint;
+	/*FMatrixIndex ResultingSpawnPoint;
 	bool bFunctionSuccess = false;
 
 	if (CombatGridManager->TryGetUnoccupiedTileAroundSpawnPoint(SpawnPoint->TileIndex, ResultingSpawnPoint))
@@ -69,7 +69,9 @@ bool ACombatMode::PlaceCombatUnitOnGrid(ACombatUnit* CombatUnit, ASpawnPoint* Sp
 	else
 	{
 		return false;
-	}
+	}*/
+
+	return true;
 }
 
 UCombatGridManager* ACombatMode::GetCombatGridManagerRef()

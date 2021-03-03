@@ -17,8 +17,8 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 		bool bIsVoid = true;
-	UPROPERTY(BlueprintReadOnly) //These coordinates represent bottom centre of the tile volume
-		FVector AbsoluteCoordinates;
+	UPROPERTY(BlueprintReadOnly) 
+		FVector AbsoluteCoordinates;	//These coordinates represent bottom centre of the tile volume
 	UPROPERTY(BlueprintReadWrite)
 		AGridObject* TileHolder = nullptr;
 	UPROPERTY(BlueprintReadWrite)

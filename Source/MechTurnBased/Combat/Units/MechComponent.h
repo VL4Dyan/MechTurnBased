@@ -20,12 +20,12 @@ public:
 	UMechComponent();
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
+	virtual UBoxComponent* GetCollisionRef() override;
+
 	UFUNCTION(BlueprintCallable, BlueprintImplementableEvent)
 		UActionResult* GetAvailableActions();
 	UFUNCTION()
 		bool TryGetSubComponents(TArray<UMechComponent*>& OutMechComponents);
-	UFUNCTION()
-		UBoxComponent* GetCollisionBoxRef();
 	UFUNCTION()
 		void UpdateMechComponentState(const FGridObjectComponentState& MechComponentStateReplacement);
 	UFUNCTION()

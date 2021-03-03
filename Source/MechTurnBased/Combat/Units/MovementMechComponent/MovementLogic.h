@@ -7,7 +7,6 @@
 #include "../../Grid/CombatGridManager.h"
 #include "../../CombatMode.h"
 #include "PathNode.h"
-#include "../ActionResult/TileTargetingResult.h"
 #include "MovementLogic.generated.h"
 
 

@@ -30,7 +30,7 @@ void UMechComponent::SetCollisionBoxRef(UBoxComponent* CollisionBox)
 	CollisionBoxRef = CollisionBox;
 }
 
-UBoxComponent* UMechComponent::GetCollisionBoxRef()
+UBoxComponent* UMechComponent::GetCollisionRef()
 {
 	return CollisionBoxRef;
 }

@@ -1,5 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+
 #include "TargetingLogic.h"
 
 UTargetingLogic::UTargetingLogic()
@@ -18,28 +19,35 @@ void UTargetingLogic::BeginPlay()
 void UTargetingLogic::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-
-	// ...
 }
 
 UActionResult* UTargetingLogic::GetTargetsViaLineTrace(FMatrixIndex PositionToLookFrom, int Range)
 {
 	UActionResult* Result = NewObject<UActionResult>();
-	TArray<FMatrixIndex> PotentiallyTargetableTiles;
 
+	TArray<FMatrixIndex> PotentiallyTargetableTiles;
 	PotentiallyTargetableTiles.Append(GetTargetableIndexesInRange(PositionToLookFrom, Range, true));
 
-	for (int i = 0; i < PotentiallyTargetableTiles.Num(); i++)
+	TArray<AGridObject*> PotentiallyTargetableGridObjects;
+	for (FMatrixIndex TileIndex : PotentiallyTargetableTiles)
 	{
-		TArray<UMechComponent*> TargetableMechComponents = GetTargetableMechComponents(PositionToLookFrom, PotentiallyTargetableTiles[i]);
+		FTileData TileData;
+		CombatGridManagerRef->TryGetTileDataByIndex(TileIndex, TileData);
+
+		if (TileData.TileHolder != nullptr && !PotentiallyTargetableGridObjects.Contains(TileData.TileHolder))
+		{
+			PotentiallyTargetableGridObjects.Add(TileData.TileHolder);
+		}
+	}
+
+	for (int i = 0; i < PotentiallyTargetableGridObjects.Num(); i++)
+	{
+		TArray<UGridObjectComponent*> TargetableMechComponents = GetTargetableGridObjectComponents(PositionToLookFrom, PotentiallyTargetableGridObjects[i]);
 		if (TargetableMechComponents.Num() > 0)
 		{
-			Result->AddTileTarget(PotentiallyTargetableTiles[i]);
-
 			for (int j = 0; j < TargetableMechComponents.Num(); j++)
 			{
-				Result->AddComponentTarget(PotentiallyTargetableTiles[i], TargetableMechComponents[j]);
-				Result->TryCreateCompUpdate(TargetableMechComponents[j], PotentiallyTargetableTiles[i], TargetableMechComponents[j]);
+				UComponentTargetingResult* CompTargetingResult = Result->AddComponentTarget(TargetableMechComponents[j]);
 			}
 		}
 	}
@@ -47,36 +55,26 @@ UActionResult* UTargetingLogic::GetTargetsViaLineTrace(FMatrixIndex PositionToLo
 	return Result;
 }
 
-TArray<UMechComponent*> UTargetingLogic::GetTargetableMechComponents(FMatrixIndex PositionToLookFrom, FMatrixIndex TargetPosition)
+TArray<UGridObjectComponent*> UTargetingLogic::GetTargetableGridObjectComponents(FMatrixIndex PositionToLookFrom, AGridObject* TargetGridObject)
 {
-	TArray<UMechComponent*> Result;
+	TArray<UGridObjectComponent*> Result;
 	TArray<FVector> RayStartingPoints;
-	FTileData ExecutionerTileData, TargetTileData;
-	CombatGridManagerRef->TryGetTileDataByIndex(PositionToLookFrom, ExecutionerTileData);
-	CombatGridManagerRef->TryGetTileDataByIndex(TargetPosition, TargetTileData);
-	ACombatUnit* EnemyUnit;
-	TArray<UMechComponent*> UnitMechComponents;
+	FTileData ExecutionerTileData;
+	TArray<UGridObjectComponent*> GridObjectComponents;
 
-	if (TargetTileData.TileHolder != nullptr)
-	{
-		if (TargetTileData.TileHolder->GetGridObjectType() == EGridObjectType::GOType_CombatUnit)
-		{
-			EnemyUnit = Cast<ACombatUnit>(TargetTileData.TileHolder);
-			UnitMechComponents = EnemyUnit->GetMechComponentsHavingCollisionBoxes();
-		}
-	}
+	CombatGridManagerRef->TryGetTileDataByIndex(PositionToLookFrom, ExecutionerTileData);
 
 	RayStartingPoints.Add(FVector(ExecutionerTileData.AbsoluteCoordinates.X, ExecutionerTileData.AbsoluteCoordinates.Y, ExecutionerTileData.AbsoluteCoordinates.Z + TileHeight / 2));
-	RayStartingPoints.Append(GetExecutionerSidePoints(ExecutionerTileData.AbsoluteCoordinates, TargetTileData.AbsoluteCoordinates));
-	
-	for (int i = 0; i < UnitMechComponents.Num(); i++)
+	RayStartingPoints.Append(GetExecutionerSidePoints(ExecutionerTileData.AbsoluteCoordinates, TargetGridObject->GetActorLocation()));
+
+	for (int i = 0; i < GridObjectComponents.Num(); i++)
 	{
-		UBoxComponent* CollisionBox = UnitMechComponents[i]->GetCollisionBoxRef();
+		UBoxComponent* CollisionBox = GridObjectComponents[i]->GetCollisionRef();
 		for (int j = 0; j < RayStartingPoints.Num(); j++)
 		{
 			if (!AnyObstaclesOnLine(RayStartingPoints[j], CollisionBox->GetComponentLocation(), CollisionBox))
 			{
-				Result.Add(UnitMechComponents[i]);
+				Result.Add(GridObjectComponents[i]);
 				break;
 			}
 		}
@@ -117,14 +115,6 @@ TArray <FVector> UTargetingLogic::GetExecutionerSidePoints(FVector ExecutionerCe
 
 	return Result;
 }
-
-/*TArray<UTileTargetingResult*> UTargetingLogic::GetTargetsViaArcTrace(FMatrixIndex PositionToLookFrom, int Range)
-{
-	TArray<UTileTargetingResult*> Result;
-
-
-	return Result;
-}*/
 
 TArray<FMatrixIndex> UTargetingLogic::GetTargetableIndexesInRange(FMatrixIndex PositionToLookFrom, int Range, bool bIgnoreTilesWithoutUnits)
 {

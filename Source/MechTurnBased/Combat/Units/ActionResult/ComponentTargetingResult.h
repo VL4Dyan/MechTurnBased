@@ -7,7 +7,7 @@
 #include "TileDataUpdate.h"
 #include "ComponentTargetingResult.generated.h"
 
-UCLASS(Blueprintable)
+UCLASS()
 class MECHTURNBASED_API UComponentTargetingResult : public UObject
 {
 	GENERATED_BODY()
@@ -18,6 +18,7 @@ public:
 	UFUNCTION()
 		void Initialize(UGridObjectComponent* GridObjectComponentToSet);
 
+public:
 	UPROPERTY()
 		UGridObjectComponent* GridObjectComponent;
 

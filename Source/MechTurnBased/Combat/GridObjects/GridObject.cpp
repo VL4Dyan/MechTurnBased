@@ -36,3 +36,22 @@ bool AGridObject::TryToFall()
 {
 	return false;
 }
+
+TArray<UGridObjectComponent*> AGridObject::GetGridObjectComponents()
+{
+	TArray<UGridObjectComponent*> Result;
+
+	return Result;
+}
+
+bool AGridObject::TryGetGridObjectTileIndex(FMatrixIndex& OutTileIndex)
+{
+	OutTileIndex = FMatrixIndex(0, 0, 0);
+
+	return false;
+}
+
+void AGridObject::ApplyEnvironmentalDamage(FMatrixIndex IndexOfAffectedTile, int Dmg)
+{
+
+}

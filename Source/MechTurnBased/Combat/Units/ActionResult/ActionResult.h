@@ -20,16 +20,11 @@ public:
 	UActionResult();
 
 	UFUNCTION()
-		void AddTileTarget(FMatrixIndex TileIndex);
+		UTileTargetingResult* AddTileTarget(FMatrixIndex TargetTileIndex);
 	UFUNCTION()
-		void AddComponentTarget(FMatrixIndex TileIndexOfExistingTileTarget, UGridObjectComponent* MechComponent);
-	UFUNCTION()
-		bool TryCreateCompUpdate(UGridObjectComponent* MechComponentToAdd, FMatrixIndex TargetTileIndex, UGridObjectComponent* TargetMechComponent = nullptr);
-	UFUNCTION()
-		bool TryCreateTileUpdate(FMatrixIndex TileIndexToAdd, FMatrixIndex TargetTileIndex, UGridObjectComponent* TargetMechComponent = nullptr);
-	UFUNCTION()
-		TArray<UGridObjectComponentStateUpdate*> GetComponentStateUpdates();
+		UComponentTargetingResult* AddComponentTarget(UGridObjectComponent* GridObjectComponentRef);
 
 private:
-	TArray<UTileTargetingResult*> TileTargets;
+	TArray<UTileTargetingResult*> TileTargetingResults;
+	TArray<UComponentTargetingResult*> ComponentTargetingResults;
 };

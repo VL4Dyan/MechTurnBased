@@ -25,15 +25,19 @@ public:
 	UFUNCTION()
 		bool IsComponentABase();
 	UFUNCTION()
-		void RemoveConnectionToComponent(UBuildingComponent* ComponentRefToRemove);
+		TArray<UBuildingComponent*> RemoveConnectionToComponent(UBuildingComponent* ComponentRefToRemove);
 	UFUNCTION()
 		bool TryToDestroyYourself();
+	UFUNCTION()
+		bool TryToFall();
 	UFUNCTION()
 		void NotifyNextComponentsOfAcquirementOfABaseComponent(UBuildingComponent* BaseComponent);
 	UFUNCTION()
 		void ActivateComponent();
 	UFUNCTION()
 		void DeactivateComponent();
+	UFUNCTION()
+		bool IsComponentDestroyed();
 
 	virtual void UpdateComponentState(FGridObjectComponentState ComponentStateReplacement) override;
 
@@ -49,7 +53,10 @@ public:
 		TArray<UBuildingComponent*> PreviousComponents; //Components that lead to base components
 
 private:
-	UCombatGridManager* CombatGridManagerRef = nullptr;
+	UPROPERTY()
+		UCombatGridManager* CombatGridManagerRef = nullptr;
+	UPROPERTY()
+		bool bIsDestroyed = false;
 
 protected:
 	UPROPERTY(BlueprintReadWrite)

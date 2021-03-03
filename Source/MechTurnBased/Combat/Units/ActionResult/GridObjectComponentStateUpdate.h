@@ -6,7 +6,7 @@
 #include "../../GridObjects/GridObjectComponent.h"
 #include "GridObjectComponentStateUpdate.generated.h"
 
-UCLASS(Blueprintable)
+UCLASS()
 class MECHTURNBASED_API UGridObjectComponentStateUpdate : public UObject
 {
 	GENERATED_BODY()

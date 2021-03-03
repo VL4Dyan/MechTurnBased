@@ -3,18 +3,15 @@
 
 #include "GridObjectComponent.h"
 
-// Sets default values for this component's properties
 UGridObjectComponent::UGridObjectComponent()
 {
 	// Set this component to be initialized when the game starts, and to be ticked every frame.  You can turn these features
 	// off to improve performance if you don't need them.
-	PrimaryComponentTick.bCanEverTick = true;
+	PrimaryComponentTick.bCanEverTick = false;
 
 	// ...
 }
 
-
-// Called when the game starts
 void UGridObjectComponent::BeginPlay()
 {
 	Super::BeginPlay();
@@ -23,8 +20,6 @@ void UGridObjectComponent::BeginPlay()
 	
 }
 
-
-// Called every frame
 void UGridObjectComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
@@ -32,7 +27,45 @@ void UGridObjectComponent::TickComponent(float DeltaTime, ELevelTick TickType, F
 	// ...
 }
 
+FGridObjectComponentState UGridObjectComponent::GetComponentState()
+{
+	return FGridObjectComponentState();
+}
+
 void UGridObjectComponent::UpdateComponentState(FGridObjectComponentState ComponentStateReplacement)
 {
 
 }
+
+UBoxComponent* UGridObjectComponent::GetCollisionRef()
+{
+	return nullptr;
+}
+
+TArray<FMatrixIndex> UGridObjectComponent::GetTileTargets(bool& OutIsDynamicTargeting)
+{
+	TArray<FMatrixIndex> Result;
+
+	OutIsDynamicTargeting = false;
+	return Result;
+}
+
+bool UGridObjectComponent::TryGetTargetableGridObjectComponents(FMatrixIndex TargetTile, TArray<UGridObjectComponent*>& OutTargetableGridObjectComponents)
+{
+	TArray<UGridObjectComponent*> Result;
+	OutTargetableGridObjectComponents = Result;
+
+	return false;
+}
+
+void UGridObjectComponent::ExecuteFunction(FMatrixIndex TargetTile, UGridObjectComponent* TargetComponent)
+{
+
+}
+
+void UGridObjectComponent::SetCollisionRef(UBoxComponent* CollisionBoxRefToSet)
+{
+	CollisionBoxRef = CollisionBoxRefToSet;
+}
+
+

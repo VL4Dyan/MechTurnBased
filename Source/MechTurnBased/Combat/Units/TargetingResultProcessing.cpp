@@ -4,7 +4,7 @@
 
 void UTargetingResultProcessing::ProcessTargetingResults(UActionResult* ActionTargetingResult, int Damage)
 {
-	TArray<UGridObjectComponentStateUpdate*> CompStatesToProcess = ActionTargetingResult->GetComponentStateUpdates();
+	/*TArray<UGridObjectComponentStateUpdate*> CompStatesToProcess = ActionTargetingResult->GetComponentStateUpdates();
 
 	for (UGridObjectComponentStateUpdate* CompStateUpd : CompStatesToProcess)
 	{
@@ -21,5 +21,5 @@ void UTargetingResultProcessing::ProcessTargetingResults(UActionResult* ActionTa
 		}
 
 		CompStateUpd->GridObjectComponentStateReplacement = CompState;
-	}
+	}*/
 }

@@ -6,7 +6,7 @@
 #include "../../Grid/MatrixIndex.h"
 #include "TileDataUpdate.generated.h"
 
-UCLASS(Blueprintable)
+UCLASS()
 class MECHTURNBASED_API UTileDataUpdate : public UObject
 {
 	GENERATED_BODY()

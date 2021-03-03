@@ -1,5 +1,6 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
+
 #pragma once
 
 #include "CoreMinimal.h"
@@ -8,9 +9,10 @@
 #include "../Grid/MatrixIndex.h"
 #include "../Grid/CombatGridManager.h"
 #include "../CombatMode.h"
-#include "MechComponent.h"
+#include "../GridObjects/GridObjectComponent.h"
 #include "../GridObjects/GridObjectType.h"
 #include "ActionResult/ActionResult.h"
+#include "ActionResult/ComponentTargetingResult.h"
 #include "TargetingLogic.generated.h"
 
 
@@ -25,13 +27,15 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		UActionResult* GetTargetsViaLineTrace(FMatrixIndex PositionToLookFrom, int Range);
-	//UFUNCTION(BlueprintCallable)
-	//	TArray<UTileTargetingResult*> GetTargetsViaArcTrace(FMatrixIndex PositionToLookFrom, int Range);
 
 private:
+	UFUNCTION()
 		TArray<FMatrixIndex> GetTargetableIndexesInRange(FMatrixIndex PositionToLookFrom, int Range, bool bIgnoreTilesWithoutUnits);
-		TArray<UMechComponent*> GetTargetableMechComponents(FMatrixIndex PositionToLookFrom, FMatrixIndex TargetPosition);
+	UFUNCTION()
+		TArray<UGridObjectComponent*> GetTargetableGridObjectComponents(FMatrixIndex PositionToLookFrom, AGridObject* TargetGridObject);
+	UFUNCTION()
 		TArray <FVector> GetExecutionerSidePoints(FVector ExecutionerCentre, FVector TargetCentre);
+	UFUNCTION()
 		bool AnyObstaclesOnLine(FVector StartingPoint, FVector EndingPoint, UPrimitiveComponent* PrimitiveComponent);
 
 protected:

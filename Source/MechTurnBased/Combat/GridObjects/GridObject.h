@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "GridObjectType.h"
+#include "GridObjectComponent.h"
 #include "GridObject.generated.h"
 
 UCLASS(Abstract, Blueprintable)
@@ -22,12 +23,17 @@ public:
 		EGridObjectType GetGridObjectType();
 	UFUNCTION()
 		virtual bool TryToFall();
-
+	UFUNCTION()
+		virtual void ApplyEnvironmentalDamage(FMatrixIndex IndexOfAffectedTile, int Dmg);
+	UFUNCTION(BlueprintCallable)
+		virtual TArray<UGridObjectComponent*> GetGridObjectComponents();
+	UFUNCTION(BlueprintCallable)
+		virtual bool TryGetGridObjectTileIndex(FMatrixIndex& OutTileIndex);
 protected:
 	virtual void BeginPlay() override;
 
 protected:
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 		EGridObjectType GridObjectType;
 
 };

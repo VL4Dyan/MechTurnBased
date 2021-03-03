@@ -7,7 +7,6 @@
 #include "TileData.h"
 #include <vector>
 #include "MatrixIndex.h"
-#include "../Units/CombatUnit.h"
 #include "../GridObjects/GridObject.h"
 #include "Components/BoxComponent.h"
 #include "CombatGridManager.generated.h"
