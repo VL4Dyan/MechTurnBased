@@ -6,3 +6,8 @@ UTileDataUpdate::UTileDataUpdate()
 {
 
 }
+
+void UTileDataUpdate::Initialize(FMatrixIndex TileIndexToSet)
+{
+	TileIndex = TileIndexToSet;
+}

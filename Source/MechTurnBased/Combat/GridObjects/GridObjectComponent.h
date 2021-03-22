@@ -2,14 +2,22 @@
 
 #pragma once
 
+class UActionResult;
+
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Components/BoxComponent.h"
 #include "../Grid/MatrixIndex.h"
-//#include "GridObject.h"
 #include "GridObjectComponentState.h"
 #include "GridObjectComponent.generated.h"
 
+UENUM(BlueprintType)
+enum class EGridObjectCompType : uint8
+{
+	CompType_Movement UMETA(DisplayName = "MovementComponent"),
+	CompType_Attack UMETA(DisplayName = "AttackingComponent"),
+	CompType_Other UMETA(DisplayName = "Other")
+};
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent), Abstract)
 class MECHTURNBASED_API UGridObjectComponent : public USceneComponent
@@ -22,18 +30,16 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		virtual FGridObjectComponentState GetComponentState();
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 		virtual void UpdateComponentState(FGridObjectComponentState ComponentStateReplacement);
 	UFUNCTION()
 		virtual UBoxComponent* GetCollisionRef();
 	UFUNCTION(BlueprintCallable)
 		virtual void SetCollisionRef(UBoxComponent* CollisionBoxRefToSet);
 	UFUNCTION(BlueprintCallable)
-		virtual TArray<FMatrixIndex> GetTileTargets(bool& OutIsDynamicTargeting);
+		virtual FMatrixIndex GetTileToHighlight(); //temp function
 	UFUNCTION(BlueprintCallable)
-		virtual bool TryGetTargetableGridObjectComponents(FMatrixIndex TargetTile, TArray<UGridObjectComponent*>& OutTargetableGridObjectComponents);
-	UFUNCTION(BlueprintCallable)
-		virtual void ExecuteFunction(FMatrixIndex TargetTile, UGridObjectComponent* TargetComponent);
+		EGridObjectCompType GetComponentType();
 
 protected:
 	virtual void BeginPlay() override;
@@ -44,5 +50,8 @@ public:
 	UPROPERTY()
 		FGridObjectComponentState ComponentState;
 
+protected:
+	UPROPERTY(BlueprintReadWrite)
+		EGridObjectCompType ComponentType = EGridObjectCompType::CompType_Other;
 
 };

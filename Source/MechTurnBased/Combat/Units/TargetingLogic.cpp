@@ -5,20 +5,7 @@
 
 UTargetingLogic::UTargetingLogic()
 {
-	PrimaryComponentTick.bCanEverTick = false;
-}
 
-void UTargetingLogic::BeginPlay()
-{
-	Super::BeginPlay();
-
-	CombatGridManagerRef = Cast<ACombatMode>(GetWorld()->GetAuthGameMode())->GetCombatGridManagerRef();
-	CombatGridManagerRef->GetTileMeasurments(TileWidthLength, TileHeight);
-}
-
-void UTargetingLogic::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 }
 
 UActionResult* UTargetingLogic::GetTargetsViaLineTrace(FMatrixIndex PositionToLookFrom, int Range)
@@ -40,14 +27,21 @@ UActionResult* UTargetingLogic::GetTargetsViaLineTrace(FMatrixIndex PositionToLo
 		}
 	}
 
-	for (int i = 0; i < PotentiallyTargetableGridObjects.Num(); i++)
+	for (int i = 0; i < PotentiallyTargetableTiles.Num(); i++)
 	{
-		TArray<UGridObjectComponent*> TargetableMechComponents = GetTargetableGridObjectComponents(PositionToLookFrom, PotentiallyTargetableGridObjects[i]);
-		if (TargetableMechComponents.Num() > 0)
+		TArray<UGridObjectComponent*> TargetableGridObjectComponents = GetTargetableGridObjectComponents(PositionToLookFrom, PotentiallyTargetableTiles[i]);
+		if (TargetableGridObjectComponents.Num() > 0)
 		{
-			for (int j = 0; j < TargetableMechComponents.Num(); j++)
+			TArray<FMatrixIndex> AffectedTiles;
+			AffectedTiles.Add(PotentiallyTargetableTiles[i]);
+
+			UTileTargetingResult* TileTargetingResult = Result->AddTileTarget(AffectedTiles);
+
+			for (int j = 0; j < TargetableGridObjectComponents.Num(); j++)
 			{
-				UComponentTargetingResult* CompTargetingResult = Result->AddComponentTarget(TargetableMechComponents[j]);
+				UComponentTargetingResult* CompTargetingResult = TileTargetingResult->AddComponentTarget(TargetableGridObjectComponents[j]);
+
+				CompTargetingResult->AddGridObjectComponentStateUpdate(TargetableGridObjectComponents[j]);
 			}
 		}
 	}
@@ -55,24 +49,30 @@ UActionResult* UTargetingLogic::GetTargetsViaLineTrace(FMatrixIndex PositionToLo
 	return Result;
 }
 
-TArray<UGridObjectComponent*> UTargetingLogic::GetTargetableGridObjectComponents(FMatrixIndex PositionToLookFrom, AGridObject* TargetGridObject)
+TArray<UGridObjectComponent*> UTargetingLogic::GetTargetableGridObjectComponents(FMatrixIndex PositionToLookFrom, FMatrixIndex TargetTileIndex)
 {
 	TArray<UGridObjectComponent*> Result;
 	TArray<FVector> RayStartingPoints;
-	FTileData ExecutionerTileData;
+	FTileData ExecutionerTileData, TargetTileData;
 	TArray<UGridObjectComponent*> GridObjectComponents;
 
 	CombatGridManagerRef->TryGetTileDataByIndex(PositionToLookFrom, ExecutionerTileData);
+	CombatGridManagerRef->TryGetTileDataByIndex(TargetTileIndex, TargetTileData);
 
-	RayStartingPoints.Add(FVector(ExecutionerTileData.AbsoluteCoordinates.X, ExecutionerTileData.AbsoluteCoordinates.Y, ExecutionerTileData.AbsoluteCoordinates.Z + TileHeight / 2));
-	RayStartingPoints.Append(GetExecutionerSidePoints(ExecutionerTileData.AbsoluteCoordinates, TargetGridObject->GetActorLocation()));
+	RayStartingPoints.Add(FVector(ExecutionerTileData.AbsoluteCoordinates.X, ExecutionerTileData.AbsoluteCoordinates.Y, ExecutionerTileData.AbsoluteCoordinates.Z + TileHeight));
+	RayStartingPoints.Append(GetExecutionerSidePoints(ExecutionerTileData.AbsoluteCoordinates, TargetTileData.AbsoluteCoordinates));
+
+	if (TargetTileData.TileHolder != nullptr)
+	{
+		GridObjectComponents = TargetTileData.TileHolder->GetGridObjectComponentsOccupyingTileIndex(TargetTileIndex);
+	}
 
 	for (int i = 0; i < GridObjectComponents.Num(); i++)
 	{
 		UBoxComponent* CollisionBox = GridObjectComponents[i]->GetCollisionRef();
 		for (int j = 0; j < RayStartingPoints.Num(); j++)
 		{
-			if (!AnyObstaclesOnLine(RayStartingPoints[j], CollisionBox->GetComponentLocation(), CollisionBox))
+			if (!AnyObstaclesOnLine(RayStartingPoints[j], CollisionBox->GetComponentLocation(), CollisionBox, ExecutionerTileData.TileHolder))
 			{
 				Result.Add(GridObjectComponents[i]);
 				break;
@@ -83,12 +83,16 @@ TArray<UGridObjectComponent*> UTargetingLogic::GetTargetableGridObjectComponents
 	return Result;
 }
 
-bool UTargetingLogic::AnyObstaclesOnLine(FVector StartingPoint, FVector EndingPoint, UPrimitiveComponent* PrimitiveComponent)
+bool UTargetingLogic::AnyObstaclesOnLine(FVector StartingPoint, FVector EndingPoint, UPrimitiveComponent* ComponentToTrace, AGridObject* ActorToIgnore)
 {
 	FHitResult Hit;
-	GetWorld()->SweepSingleByChannel(Hit, StartingPoint, EndingPoint, FQuat(), CollisionChannel, FCollisionShape::MakeSphere(TraceSphereRadius));
 
-	if (Hit.Component != PrimitiveComponent && Hit.Component != nullptr)
+	FCollisionQueryParams TraceCollisionParams = FCollisionQueryParams::DefaultQueryParam;
+	TraceCollisionParams.AddIgnoredActor(ActorToIgnore);
+
+	GetWorld()->SweepSingleByChannel(Hit, StartingPoint, EndingPoint, FQuat(), CollisionChannel, FCollisionShape::MakeSphere(TraceSphereRadius), TraceCollisionParams);
+
+	if (Hit.Component == nullptr || Hit.Component != ComponentToTrace)
 	{
 		return true;
 	}
@@ -98,20 +102,38 @@ bool UTargetingLogic::AnyObstaclesOnLine(FVector StartingPoint, FVector EndingPo
 	}
 }
 
-TArray <FVector> UTargetingLogic::GetExecutionerSidePoints(FVector ExecutionerCentre, FVector TargetCentre)
+TArray<FVector> UTargetingLogic::GetExecutionerSidePoints(FVector ExecutionerCentre, FVector TargetCentre)
 {
 	TArray<FVector> Result;
+	float DistanceToCentre = TileWidthLength / 3;
+	float Height = TileHeight;
 	float currX, currY;
 
-	float D = 4 * pow(ExecutionerCentre.X, 2) - 4 * (TileWidthLength / 3) / (1 + pow(TargetCentre.X - ExecutionerCentre.X, 2) / pow(TargetCentre.Y - ExecutionerCentre.Y, 2));
+	if (ExecutionerCentre.X != TargetCentre.X && ExecutionerCentre.Y != TargetCentre.Y)
+	{
+		float D = 4 * pow(ExecutionerCentre.X, 2) - 4 * (pow(ExecutionerCentre.X, 2) - (DistanceToCentre) / (1 + pow(TargetCentre.X - ExecutionerCentre.X, 2) / pow(TargetCentre.Y - ExecutionerCentre.Y, 2)));
 
-	currX = (2 * ExecutionerCentre.X - sqrt(D)) / 2;
-	currY = ExecutionerCentre.Y - ((TargetCentre.X - ExecutionerCentre.X) * (currX - ExecutionerCentre.X) / (TargetCentre.Y - ExecutionerCentre.Y));
-	Result.Add(FVector(currX, currY, ExecutionerCentre.Z + TileHeight / 2));
+		currX = (2 * ExecutionerCentre.X - sqrt(D)) / 2;
+		currY = ExecutionerCentre.Y - ((TargetCentre.X - ExecutionerCentre.X) * (currX - ExecutionerCentre.X) / (TargetCentre.Y - ExecutionerCentre.Y));
+		Result.Add(FVector(currX, currY, ExecutionerCentre.Z + Height));
 
-	currX = (2 * ExecutionerCentre.X + sqrt(D)) / 2;
-	currY = ExecutionerCentre.Y - ((TargetCentre.X - ExecutionerCentre.X) * (currX - ExecutionerCentre.X) / (TargetCentre.Y - ExecutionerCentre.Y));
-	Result.Add(FVector(currX, currY, ExecutionerCentre.Z + TileHeight / 2));
+		currX = (2 * ExecutionerCentre.X + sqrt(D)) / 2;
+		currY = ExecutionerCentre.Y - ((TargetCentre.X - ExecutionerCentre.X) * (currX - ExecutionerCentre.X) / (TargetCentre.Y - ExecutionerCentre.Y));
+		Result.Add(FVector(currX, currY, ExecutionerCentre.Z + Height));
+	}
+	else
+	{
+		if (ExecutionerCentre.X == TargetCentre.X)
+		{
+			Result.Add(FVector(ExecutionerCentre.X + DistanceToCentre, ExecutionerCentre.Y, Height));
+			Result.Add(FVector(ExecutionerCentre.X - DistanceToCentre, ExecutionerCentre.Y, Height));
+		}
+		else
+		{
+			Result.Add(FVector(ExecutionerCentre.X, ExecutionerCentre.Y + DistanceToCentre, Height));
+			Result.Add(FVector(ExecutionerCentre.X, ExecutionerCentre.Y + DistanceToCentre, Height));
+		}
+	}
 
 	return Result;
 }

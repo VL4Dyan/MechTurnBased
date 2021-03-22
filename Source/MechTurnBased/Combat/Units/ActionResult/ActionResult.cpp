@@ -7,22 +7,72 @@ UActionResult::UActionResult()
 
 }
 
-UTileTargetingResult* UActionResult::AddTileTarget(FMatrixIndex TargetTileIndex)
+UTileTargetingResult* UActionResult::AddTileTarget(TArray<FMatrixIndex> TargetTileIndex)
 {
 	UTileTargetingResult* TileTarget = NewObject<UTileTargetingResult>();
 	TileTarget->Initialize(TargetTileIndex);
 
 	TileTargetingResults.Add(TileTarget);
-	
+
 	return TileTarget;
 }
 
-UComponentTargetingResult* UActionResult::AddComponentTarget(UGridObjectComponent* GridObjectComponentRef)
+void UActionResult::Initialize(UGridObjectComponent* ExecutorComponentToSet)
 {
-	UComponentTargetingResult* ComponentTarget = NewObject<UComponentTargetingResult>();
-	ComponentTarget->Initialize(GridObjectComponentRef);
-
-	ComponentTargetingResults.Add(ComponentTarget);
-
-	return ComponentTarget;
+	ExecutorComponent = ExecutorComponentToSet;
 }
+
+FComponentDescription UActionResult::GetComponentDescription()
+{
+	FComponentDescription Result = FComponentDescription();
+
+	if (ExecutorComponent != nullptr)
+	{
+		Result.ComponentType = ExecutorComponent->GetComponentType();
+	}
+
+	return Result;
+}
+
+TArray<FMatrixIndex> UActionResult::GetTilesToHighlight()
+{
+	TArray<FMatrixIndex> Result;
+
+	for (UTileTargetingResult* TileTarget : TileTargetingResults)
+	{
+		Result.Append(TileTarget->GetTileIndexArray());
+	}
+
+	return Result;
+}
+
+TArray<UTargetingResult*> UActionResult::GetTargetingResultsByTile(FMatrixIndex TileTarget)
+{
+	TArray<UTargetingResult*> Result;
+
+	for (UTileTargetingResult* TileTargetingResult : TileTargetingResults)
+	{
+		TArray<FMatrixIndex> TileIndexArray = TileTargetingResult->GetTileIndexArray();
+
+		for (FMatrixIndex TileIndex : TileIndexArray)
+		{
+			if (TileIndex == TileTarget)
+			{
+				if (TileTargetingResult->GridObjectComponentUpdates.Num() > 0 || TileTargetingResult->TileUpdates.Num() > 0)
+				{
+					Result.Add(TileTargetingResult);
+				}
+
+				for (UComponentTargetingResult* CompTargetingResult : TileTargetingResult->ComponentTargetingResults)
+				{
+					Result.Add(CompTargetingResult);
+				}
+
+				return Result;
+			}
+		}
+	}
+
+	return Result;
+}
+

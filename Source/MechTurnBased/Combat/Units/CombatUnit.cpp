@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "CombatUnit.h"
+#include "MechComponent.h"
 
 ACombatUnit::ACombatUnit()
 {
@@ -109,3 +110,47 @@ bool ACombatUnit::TryToFall()
 	}
 	return false;
 }
+
+void ACombatUnit::UpdateUnitPosition(FMatrixIndex TileIndexReplacement)
+{
+	UnitTileIndex = TileIndexReplacement;
+
+	for (UMechComponent* MechComp : UnitMechComponents)
+	{
+		MechComp->UpdateComponentPosition(TileIndexReplacement);
+	}
+}
+
+TArray<UGridObjectComponent*> ACombatUnit::GetGridObjectComponents()
+{
+	TArray<UGridObjectComponent*> Result;
+
+	for (UMechComponent* MechComp : UnitMechComponents)
+	{
+		Result.Add(MechComp);
+	}
+
+	return Result;
+}
+
+TArray<UActionResult*> ACombatUnit::GetActionResultArray()
+{
+	TArray<UActionResult*> Result;
+
+	for (UMechComponent* MechComp : UnitMechComponents)
+	{
+		Result.Add(MechComp->GetActionResult());
+	}
+
+	return Result;
+}
+
+ TArray<UGridObjectComponent*> ACombatUnit::GetGridObjectComponentsOccupyingTileIndex(FMatrixIndex TileIndex)
+{
+	 TArray<UGridObjectComponent*> Result;
+
+	 Result.Append(UnitMechComponents);
+
+	 return Result;
+}
+

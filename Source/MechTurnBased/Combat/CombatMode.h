@@ -8,6 +8,7 @@
 #include "Grid/MatrixIndex.h"
 #include "Grid/TileChecker.h"
 #include "Grid/TileData.h"
+#include "Units/CombatUnit.h"
 #include "Teams.h"
 #include "CombatMode.generated.h"
 

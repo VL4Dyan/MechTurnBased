@@ -55,3 +55,16 @@ void AGridObject::ApplyEnvironmentalDamage(FMatrixIndex IndexOfAffectedTile, int
 {
 
 }
+
+TArray<UGridObjectComponent*> AGridObject::GetGridObjectComponentsOccupyingTileIndex(FMatrixIndex TileIndex)
+{
+	TArray<UGridObjectComponent*> Result;
+	return Result;
+}
+
+TArray<UActionResult*> AGridObject::GetActionResultArray()
+{
+	TArray<UActionResult*> Result;
+
+	return Result;
+}

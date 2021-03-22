@@ -191,4 +191,7 @@ bool UBuildingComponent::IsComponentDestroyed()
 	return bIsDestroyed;
 }
 
-
+FMatrixIndex UBuildingComponent::GetTileToHighlight()
+{
+	return OccupiedTileIndex;
+}

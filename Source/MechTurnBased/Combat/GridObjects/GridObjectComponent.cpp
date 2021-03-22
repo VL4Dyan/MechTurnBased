@@ -17,7 +17,7 @@ void UGridObjectComponent::BeginPlay()
 	Super::BeginPlay();
 
 	// ...
-	
+
 }
 
 void UGridObjectComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
@@ -42,30 +42,18 @@ UBoxComponent* UGridObjectComponent::GetCollisionRef()
 	return nullptr;
 }
 
-TArray<FMatrixIndex> UGridObjectComponent::GetTileTargets(bool& OutIsDynamicTargeting)
-{
-	TArray<FMatrixIndex> Result;
-
-	OutIsDynamicTargeting = false;
-	return Result;
-}
-
-bool UGridObjectComponent::TryGetTargetableGridObjectComponents(FMatrixIndex TargetTile, TArray<UGridObjectComponent*>& OutTargetableGridObjectComponents)
-{
-	TArray<UGridObjectComponent*> Result;
-	OutTargetableGridObjectComponents = Result;
-
-	return false;
-}
-
-void UGridObjectComponent::ExecuteFunction(FMatrixIndex TargetTile, UGridObjectComponent* TargetComponent)
-{
-
-}
-
 void UGridObjectComponent::SetCollisionRef(UBoxComponent* CollisionBoxRefToSet)
 {
 	CollisionBoxRef = CollisionBoxRefToSet;
 }
 
+FMatrixIndex UGridObjectComponent::GetTileToHighlight()
+{
+	return FMatrixIndex(0, 0, 0);
+}
+
+EGridObjectCompType UGridObjectComponent::GetComponentType()
+{
+	return ComponentType;
+}
 

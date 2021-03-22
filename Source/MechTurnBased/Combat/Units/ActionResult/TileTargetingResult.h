@@ -7,10 +7,11 @@
 #include "ComponentTargetingResult.h"
 #include "GridObjectComponentStateUpdate.h"
 #include "TileDataUpdate.h"
+#include "TargetingResult.h"
 #include "TileTargetingResult.generated.h"
 
-UCLASS()
-class MECHTURNBASED_API UTileTargetingResult : public UObject
+UCLASS(BlueprintType)
+class MECHTURNBASED_API UTileTargetingResult : public UTargetingResult
 {
 	GENERATED_BODY()
 
@@ -18,13 +19,22 @@ public:
 	UTileTargetingResult();
 
 	UFUNCTION()
-		void Initialize(FMatrixIndex TileIndexToSet);
+		void Initialize(TArray<FMatrixIndex> TileIndexArrayToSet);
+	UFUNCTION()
+		UComponentTargetingResult* AddComponentTarget(UGridObjectComponent* GridObjectComponentTarget);
+	UFUNCTION()
+		TArray<FMatrixIndex> GetTileIndexArray();
+	UFUNCTION()
+		UTileDataUpdate* AddTileDataUpdate(FMatrixIndex TileIndex);
 
 public:
-	UPROPERTY()
-		FMatrixIndex TileIndex;
-	UPROPERTY()
-		TArray<UGridObjectComponentStateUpdate*> MechComponentUpdates;
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
+		TArray<UGridObjectComponentStateUpdate*> GridObjectComponentUpdates;
+	UPROPERTY(BlueprintReadOnly)
 		TArray<UTileDataUpdate*> TileUpdates;
+	UPROPERTY()
+		TArray<FMatrixIndex> TileIndexArray;
+	UPROPERTY()
+		TArray<UComponentTargetingResult*> ComponentTargetingResults;
+
 };

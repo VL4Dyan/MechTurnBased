@@ -6,7 +6,7 @@
 #include "../../Grid/MatrixIndex.h"
 #include "TileDataUpdate.generated.h"
 
-UCLASS()
+UCLASS(BlueprintType)
 class MECHTURNBASED_API UTileDataUpdate : public UObject
 {
 	GENERATED_BODY()
@@ -14,8 +14,11 @@ class MECHTURNBASED_API UTileDataUpdate : public UObject
 public:
 	UTileDataUpdate();
 
-	UPROPERTY()
+	UFUNCTION()
+		void Initialize(FMatrixIndex TileIndexToSet);
+
+	UPROPERTY(BlueprintReadOnly)
 		FMatrixIndex TileIndex;
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 		FTileData TileDataReplacement;
 };

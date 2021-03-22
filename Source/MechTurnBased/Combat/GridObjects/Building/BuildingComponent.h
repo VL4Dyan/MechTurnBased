@@ -39,6 +39,8 @@ public:
 	UFUNCTION()
 		bool IsComponentDestroyed();
 
+	virtual FMatrixIndex GetTileToHighlight() override;
+
 	virtual void UpdateComponentState(FGridObjectComponentState ComponentStateReplacement) override;
 
 protected:

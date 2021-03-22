@@ -2,16 +2,15 @@
 
 #pragma once
 
-#include "CoreMinimal.h"
-#include "ComponentTargetingResult.h"
-#include "GridObjectComponentStateUpdate.h"
-#include "TileDataUpdate.h"
+#include "../../GridObjects/GridObjectComponent.h"
+#include "../../Grid/MatrixIndex.h"
+#include "ComponentDescription.h"
 #include "TileTargetingResult.h"
 #include "ComponentTargetingResult.h"
-#include "../../Grid/MatrixIndex.h"
+#include "TargetingResult.h"
 #include "ActionResult.generated.h"
 
-UCLASS()
+UCLASS(BlueprintType)
 class MECHTURNBASED_API UActionResult : public UObject
 {
 	GENERATED_BODY()
@@ -20,11 +19,24 @@ public:
 	UActionResult();
 
 	UFUNCTION()
-		UTileTargetingResult* AddTileTarget(FMatrixIndex TargetTileIndex);
+		UTileTargetingResult* AddTileTarget(TArray<FMatrixIndex> TargetTileIndex);
 	UFUNCTION()
-		UComponentTargetingResult* AddComponentTarget(UGridObjectComponent* GridObjectComponentRef);
+		void Initialize(UGridObjectComponent* ExecutorComponentToSet);
+	UFUNCTION(BlueprintCallable)
+		FComponentDescription GetComponentDescription();
+	//UFUNCTION(BlueprintCallable)
+	//	void GetExecutorComponentGeneralInfo();
+	UFUNCTION(BlueprintCallable)
+		TArray<FMatrixIndex> GetTilesToHighlight();
+	UFUNCTION(BlueprintCallable)
+		TArray<UTargetingResult*> GetTargetingResultsByTile(FMatrixIndex TileTarget);
+
+public:
+	UPROPERTY(BlueprintReadWrite)
+		UGridObjectComponent* ExecutorComponent = nullptr;
 
 private:
-	TArray<UTileTargetingResult*> TileTargetingResults;
-	TArray<UComponentTargetingResult*> ComponentTargetingResults;
+	UPROPERTY()
+		TArray<UTileTargetingResult*> TileTargetingResults;
+
 };

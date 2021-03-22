@@ -50,3 +50,14 @@ FGridObjectComponentState UMechComponent::GetMechComponentState()
 {
 	return MechComponentState;
 }
+
+void UMechComponent::UpdateComponentPosition(FMatrixIndex TileIndexReplacement)
+{
+	ComponentFunctionalityPosition = TileIndexReplacement;
+}
+
+FMatrixIndex UMechComponent::GetTileToHighlight()
+{
+	return ComponentFunctionalityPosition;
+}
+

@@ -6,7 +6,7 @@
 #include "../../GridObjects/GridObjectComponent.h"
 #include "GridObjectComponentStateUpdate.generated.h"
 
-UCLASS()
+UCLASS(BlueprintType)
 class MECHTURNBASED_API UGridObjectComponentStateUpdate : public UObject
 {
 	GENERATED_BODY()
@@ -14,8 +14,12 @@ class MECHTURNBASED_API UGridObjectComponentStateUpdate : public UObject
 public:
 	UGridObjectComponentStateUpdate();
 
-	UPROPERTY()
+	UFUNCTION()
+		void Initialize(UGridObjectComponent* GridObjCompRef);
+
+public:
+	UPROPERTY(BlueprintReadOnly)
 		UGridObjectComponent* GridObjectComponent;
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 		FGridObjectComponentState GridObjectComponentStateReplacement;
 };

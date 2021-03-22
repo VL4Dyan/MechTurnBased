@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "GridObjectType.h"
 #include "GridObjectComponent.h"
+#include "../Units/ActionResult/ActionResult.h"
 #include "GridObject.generated.h"
 
 UCLASS(Abstract, Blueprintable)
@@ -21,6 +22,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		EGridObjectType GetGridObjectType();
+	UFUNCTION(BlueprintCallable)
+		virtual TArray<UActionResult*> GetActionResultArray();
 	UFUNCTION()
 		virtual bool TryToFall();
 	UFUNCTION()
@@ -29,6 +32,9 @@ public:
 		virtual TArray<UGridObjectComponent*> GetGridObjectComponents();
 	UFUNCTION(BlueprintCallable)
 		virtual bool TryGetGridObjectTileIndex(FMatrixIndex& OutTileIndex);
+	UFUNCTION()
+		virtual TArray<UGridObjectComponent*> GetGridObjectComponentsOccupyingTileIndex(FMatrixIndex TileIndex);
+
 protected:
 	virtual void BeginPlay() override;
 

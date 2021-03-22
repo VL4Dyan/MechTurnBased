@@ -7,3 +7,8 @@ UGridObjectComponentStateUpdate::UGridObjectComponentStateUpdate()
 
 }
 
+void UGridObjectComponentStateUpdate::Initialize(UGridObjectComponent* GridObjCompRef)
+{
+	GridObjectComponent = GridObjCompRef;
+}
+

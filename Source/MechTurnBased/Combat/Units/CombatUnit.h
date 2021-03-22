@@ -2,13 +2,14 @@
 
 #pragma once
 
+class UMechComponent;
+
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "../Grid/MatrixIndex.h"
 #include "../Teams.h"
 #include "SightDirection.h"
 #include "../CombatMode.h"
-#include "MechComponent.h"
 #include "../GridObjects/GridObjectComponentState.h"
 #include "../GridObjects/GridObject.h"
 #include "CombatUnit.generated.h"
@@ -33,8 +34,13 @@ public:
 	UFUNCTION()
 		UMechComponent* GetMechMovementComponent();
 
+	virtual TArray<UGridObjectComponent*> GetGridObjectComponentsOccupyingTileIndex(FMatrixIndex TileIndex) override;
+
 protected:
 	virtual void BeginPlay() override;
+
+	UFUNCTION(BlueprintCallable)
+		void UpdateUnitPosition(FMatrixIndex TileIndexReplacement);
 
 public:
 	UPROPERTY(BlueprintReadWrite)
@@ -47,10 +53,13 @@ public:
 		ETeams UnitOwner = ETeams::Team_Player;
 	UPROPERTY(BlueprintReadWrite)
 		ESightDirection UnitViewDirection = ESightDirection::Direction_North;
+	UPROPERTY(BlueprintReadWrite)
+		TArray<UMechComponent*> UnitMechComponents;
+
+	virtual TArray<UActionResult*> GetActionResultArray() override;
+	virtual TArray<UGridObjectComponent*> GetGridObjectComponents() override;
 
 private:
-	UPROPERTY()
-		TArray<UMechComponent*> UnitMechComponents;
 	UPROPERTY()
 		UMechComponent* MovementComponent = nullptr;
 };

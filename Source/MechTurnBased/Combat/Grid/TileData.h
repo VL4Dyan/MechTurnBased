@@ -1,7 +1,8 @@
 
 #pragma once
 
-#include "../GridObjects/GridObject.h"
+class AGridObject;
+
 #include "SpawnPoint.h"
 #include "TileData.generated.h"
 
@@ -17,7 +18,7 @@ public:
 
 	UPROPERTY(BlueprintReadWrite)
 		bool bIsVoid = true;
-	UPROPERTY(BlueprintReadOnly) 
+	UPROPERTY(BlueprintReadOnly)
 		FVector AbsoluteCoordinates;	//These coordinates represent bottom centre of the tile volume
 	UPROPERTY(BlueprintReadWrite)
 		AGridObject* TileHolder = nullptr;

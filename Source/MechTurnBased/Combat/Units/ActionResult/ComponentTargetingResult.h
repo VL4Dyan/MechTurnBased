@@ -5,10 +5,11 @@
 #include "../../GridObjects/GridObjectComponent.h"
 #include "GridObjectComponentStateUpdate.h"
 #include "TileDataUpdate.h"
+#include "TargetingResult.h"
 #include "ComponentTargetingResult.generated.h"
 
-UCLASS()
-class MECHTURNBASED_API UComponentTargetingResult : public UObject
+UCLASS(BlueprintType)
+class MECHTURNBASED_API UComponentTargetingResult : public UTargetingResult
 {
 	GENERATED_BODY()
 
@@ -17,13 +18,15 @@ public:
 
 	UFUNCTION()
 		void Initialize(UGridObjectComponent* GridObjectComponentToSet);
+	UFUNCTION()
+		void AddGridObjectComponentStateUpdate(UGridObjectComponent* GridObjCompRef);
 
 public:
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 		UGridObjectComponent* GridObjectComponent;
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadOnly)
 		TArray<UTileDataUpdate*> TileUpdates;
-	UPROPERTY()
-		TArray<UGridObjectComponentStateUpdate*> MechComponentUpdates;
+	UPROPERTY(BlueprintReadOnly)
+		TArray<UGridObjectComponentStateUpdate*> GridObjectComponentUpdates;
 };

@@ -12,18 +12,18 @@
 #include "../GridObjects/GridObjectComponent.h"
 #include "../GridObjects/GridObjectType.h"
 #include "ActionResult/ActionResult.h"
+#include "ActionResult/TileTargetingResult.h"
 #include "ActionResult/ComponentTargetingResult.h"
 #include "TargetingLogic.generated.h"
 
 
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class MECHTURNBASED_API UTargetingLogic : public UActorComponent
+UCLASS(BlueprintType, ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+class MECHTURNBASED_API UTargetingLogic : public UObject
 {
 	GENERATED_BODY()
 
 public:
 	UTargetingLogic();
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION(BlueprintCallable)
 		UActionResult* GetTargetsViaLineTrace(FMatrixIndex PositionToLookFrom, int Range);
@@ -32,27 +32,24 @@ private:
 	UFUNCTION()
 		TArray<FMatrixIndex> GetTargetableIndexesInRange(FMatrixIndex PositionToLookFrom, int Range, bool bIgnoreTilesWithoutUnits);
 	UFUNCTION()
-		TArray<UGridObjectComponent*> GetTargetableGridObjectComponents(FMatrixIndex PositionToLookFrom, AGridObject* TargetGridObject);
+		TArray<UGridObjectComponent*> GetTargetableGridObjectComponents(FMatrixIndex PositionToLookFrom, FMatrixIndex TargetTileIndex);
 	UFUNCTION()
 		TArray <FVector> GetExecutionerSidePoints(FVector ExecutionerCentre, FVector TargetCentre);
 	UFUNCTION()
-		bool AnyObstaclesOnLine(FVector StartingPoint, FVector EndingPoint, UPrimitiveComponent* PrimitiveComponent);
-
-protected:
-	virtual void BeginPlay() override;
+		bool AnyObstaclesOnLine(FVector StartingPoint, FVector EndingPoint, UPrimitiveComponent* ComponentToTrace, AGridObject* ActorToIgnore);
 
 public:
 	UPROPERTY(BlueprintReadWrite)
-		float TraceSphereRadius = 10.0;
+		float TraceSphereRadius = 5.0;
 	UPROPERTY(BlueprintReadWrite)
 		TEnumAsByte<ECollisionChannel> CollisionChannel = ECollisionChannel::ECC_GameTraceChannel1;
+	UPROPERTY(BlueprintReadWrite)
+		UCombatGridManager* CombatGridManagerRef = nullptr;
 
 private:
 	UPROPERTY()
-		UCombatGridManager* CombatGridManagerRef = nullptr;
+		float TileWidthLength = 100.0;
 	UPROPERTY()
-		float TileWidthLength = 0.0;
-	UPROPERTY()
-		float TileHeight = 0.0;
+		float TileHeight = 100.0;
 
 };

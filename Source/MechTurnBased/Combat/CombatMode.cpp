@@ -39,7 +39,7 @@ void ACombatMode::ScanGrid(ATileChecker* TileChecker)
 
 bool ACombatMode::PlaceCombatUnitOnGrid(ACombatUnit* CombatUnit, ASpawnPoint* SpawnPoint)
 {
-	/*FMatrixIndex ResultingSpawnPoint;
+	FMatrixIndex ResultingSpawnPoint;
 	bool bFunctionSuccess = false;
 
 	if (CombatGridManager->TryGetUnoccupiedTileAroundSpawnPoint(SpawnPoint->TileIndex, ResultingSpawnPoint))
@@ -47,7 +47,7 @@ bool ACombatMode::PlaceCombatUnitOnGrid(ACombatUnit* CombatUnit, ASpawnPoint* Sp
 		FTileData TileDataToUpdate;
 		if (CombatGridManager->TryGetTileDataByIndex(ResultingSpawnPoint, TileDataToUpdate))
 		{
-			TileDataToUpdate.TileHolder = CombatUnit;
+			TileDataToUpdate.TileHolder = Cast<AGridObject>(CombatUnit);
 			CombatUnit->UnitTileIndex = ResultingSpawnPoint;
 			CombatUnit->SetActorLocation(TileDataToUpdate.AbsoluteCoordinates);
 			CombatUnit->UnitOwner = SpawnPoint->Team;
@@ -69,7 +69,7 @@ bool ACombatMode::PlaceCombatUnitOnGrid(ACombatUnit* CombatUnit, ASpawnPoint* Sp
 	else
 	{
 		return false;
-	}*/
+	}
 
 	return true;
 }

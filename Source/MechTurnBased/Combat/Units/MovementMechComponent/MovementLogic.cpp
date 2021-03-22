@@ -4,24 +4,24 @@
 
 UMovementLogic::UMovementLogic()
 {
-	PrimaryComponentTick.bCanEverTick = false;
+
 }
 
-void UMovementLogic::BeginPlay()
+UActionResult* UMovementLogic::GetActionResult(FMatrixIndex StartTile, int Distance)
 {
-	Super::BeginPlay();
+	UActionResult* Result = NewObject<UActionResult>();
 
-	CombatGridManagerRef = Cast<ACombatMode>(GetWorld()->GetAuthGameMode())->GetCombatGridManagerRef();
-}
+	TArray<FMatrixIndex> EndLocations = GetAllEndLocations(StartTile, Distance);
+	
+	for (FMatrixIndex TileIndex : EndLocations)
+	{
+		TArray<FMatrixIndex> TileIndexArray;
+		TileIndexArray.Add(TileIndex);
 
-void UMovementLogic::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
-{
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-}
+		Result->AddTileTarget(TileIndexArray);
+	}
 
-void UMovementLogic::GetOnFootPassableTiles()
-{
-
+	return Result;
 }
 
 TArray<FMatrixIndex> UMovementLogic::GetAllEndLocations(FMatrixIndex StartingTile, int Distance)
@@ -29,7 +29,7 @@ TArray<FMatrixIndex> UMovementLogic::GetAllEndLocations(FMatrixIndex StartingTil
 	TArray<FMatrixIndex> Result;
 	int MovesLeft = Distance;
 	int CurrentArrayStartingIndex = 0, CurrentArrayEndingIndex = 0;
-	Result.Append(GetNeighbouringTiles(StartingTile));
+	Result.Add(StartingTile);
 	CurrentArrayEndingIndex = Result.Num();
 
 	while (MovesLeft > 0 && CurrentArrayStartingIndex != CurrentArrayEndingIndex)
@@ -53,6 +53,7 @@ TArray<FMatrixIndex> UMovementLogic::GetAllEndLocations(FMatrixIndex StartingTil
 		CurrentArrayEndingIndex = Result.Num();
 	}
 
+	Result.RemoveAt(0);
 	return Result;
 }
 
@@ -60,13 +61,14 @@ TArray<FMatrixIndex> UMovementLogic::GetNeighbouringTiles(FMatrixIndex TileIndex
 {
 	TArray<FMatrixIndex> Result;
 
-	for (int x = 0; x < 3; x++)
+	for (int x = -1; x <= 1; x++)
 	{
-		for (int y = 0; y < 3; y++)
+		for (int y = -1; y <= 1; y++)
 		{
 			FMatrixIndex CurrentIndex = FMatrixIndex(TileIndex.IndexX - x, TileIndex.IndexY - y, TileIndex.IndexZ);
 			FTileData CurrentTileData;
-			if (CurrentIndex != TileIndex && CombatGridManagerRef->TryGetTileDataByIndex(CurrentIndex, CurrentTileData) && !CurrentTileData.bIsVoid)
+			if (CurrentIndex != TileIndex && CombatGridManagerRef->TryGetTileDataByIndex(CurrentIndex, CurrentTileData) && !CurrentTileData.bIsVoid
+				&& CurrentTileData.TileHolder == nullptr)
 			{
 				Result.Add(CurrentIndex);
 			}
@@ -74,16 +76,17 @@ TArray<FMatrixIndex> UMovementLogic::GetNeighbouringTiles(FMatrixIndex TileIndex
 	}
 
 	//lower level
-	for (int x = 0; x < 3; x++) 
+	for (int x = -1; x <= 1; x++) 
 	{
-		for (int y = 0; y < 3; y++)
+		for (int y = -1; y <= 1; y++)
 		{
 			FMatrixIndex CurrentIndex = FMatrixIndex(x, y, TileIndex.IndexZ - 1);
 			FMatrixIndex ObstacleIndex = FMatrixIndex(x, y, TileIndex.IndexZ);
 			FTileData TileDataOfCurrentIndex;
 			FTileData TileDataOfPotentialObstacle;
 			if (CombatGridManagerRef->TryGetTileDataByIndex(CurrentIndex, TileDataOfCurrentIndex) && !TileDataOfCurrentIndex.bIsVoid
-				&& CombatGridManagerRef->TryGetTileDataByIndex(ObstacleIndex, TileDataOfPotentialObstacle) && TileDataOfPotentialObstacle.bIsVoid)
+				&& CombatGridManagerRef->TryGetTileDataByIndex(ObstacleIndex, TileDataOfPotentialObstacle) && TileDataOfPotentialObstacle.bIsVoid
+				&& TileDataOfCurrentIndex.TileHolder == nullptr)
 			{
 				Result.Add(CurrentIndex);
 			}
@@ -91,9 +94,9 @@ TArray<FMatrixIndex> UMovementLogic::GetNeighbouringTiles(FMatrixIndex TileIndex
 	}
 
 	//upper level
-	for (int x = 0; x < 3; x++)
+	for (int x = -1; x <= 1; x++)
 	{
-		for (int y = 0; y < 3; y++)
+		for (int y = -1; y <= 1; y++)
 		{
 			FMatrixIndex CurrentIndex = FMatrixIndex(x, y, TileIndex.IndexZ + 1);
 			FMatrixIndex ObstacleIndex = TileIndex;
@@ -101,7 +104,8 @@ TArray<FMatrixIndex> UMovementLogic::GetNeighbouringTiles(FMatrixIndex TileIndex
 			FTileData TileDataOfCurrentIndex;
 			FTileData TileDataOfPotentialObstacle;
 			if (CombatGridManagerRef->TryGetTileDataByIndex(CurrentIndex, TileDataOfCurrentIndex) && !TileDataOfCurrentIndex.bIsVoid
-				&& CombatGridManagerRef->TryGetTileDataByIndex(ObstacleIndex, TileDataOfPotentialObstacle) && TileDataOfPotentialObstacle.bIsVoid)
+				&& CombatGridManagerRef->TryGetTileDataByIndex(ObstacleIndex, TileDataOfPotentialObstacle) && TileDataOfPotentialObstacle.bIsVoid
+				&& TileDataOfCurrentIndex.TileHolder == nullptr)
 			{
 				Result.Add(CurrentIndex);
 			}
