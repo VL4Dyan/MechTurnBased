@@ -2,11 +2,12 @@
 
 #pragma once
 
+class UActionResult;
+
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "GridObjectType.h"
 #include "GridObjectComponent.h"
-#include "../Units/ActionResult/ActionResult.h"
 #include "GridObject.generated.h"
 
 UCLASS(Abstract, Blueprintable)
@@ -22,6 +23,8 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		EGridObjectType GetGridObjectType();
+	UFUNCTION()
+		TArray<FMatrixIndex> GetOccupiedTiles();
 	UFUNCTION(BlueprintCallable)
 		virtual TArray<UActionResult*> GetActionResultArray();
 	UFUNCTION()
@@ -41,5 +44,7 @@ protected:
 protected:
 	UPROPERTY(BlueprintReadOnly)
 		EGridObjectType GridObjectType;
+	UPROPERTY()
+		TArray<FMatrixIndex> OccupiedTiles;
 
 };

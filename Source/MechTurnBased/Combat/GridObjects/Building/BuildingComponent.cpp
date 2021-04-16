@@ -154,7 +154,6 @@ void UBuildingComponent::ActivateComponent()
 	{
 		FTileData TileData;
 		FMatrixIndex TileIndex = OccupiedTileIndex;
-		TileIndex.IndexZ++;
 		if (CombatGridManagerRef->TryGetTileDataByIndex(TileIndex, TileData))
 		{
 			TileData.bIsVoid = false;
@@ -170,7 +169,6 @@ void UBuildingComponent::DeactivateComponent()
 	{
 		FTileData TileData;
 		FMatrixIndex TileIndex = OccupiedTileIndex;
-		TileIndex.IndexZ++;
 		if (CombatGridManagerRef->TryGetTileDataByIndex(TileIndex, TileData))
 		{
 			AGridObject* GridObjectRef = TileData.TileHolder;

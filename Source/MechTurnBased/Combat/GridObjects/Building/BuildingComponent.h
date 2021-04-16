@@ -12,7 +12,7 @@
 #include "BuildingComponent.generated.h"
 
 
-UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent), Blueprintable)
 class MECHTURNBASED_API UBuildingComponent : public UGridObjectComponent
 {
 	GENERATED_BODY()

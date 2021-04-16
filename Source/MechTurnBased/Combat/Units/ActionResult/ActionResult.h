@@ -2,12 +2,16 @@
 
 #pragma once
 
-#include "../../GridObjects/GridObjectComponent.h"
+class UMechComponent;
+class UTileDataUpdate;
+class UGridObjectComponentStateUpdate;
+
 #include "../../Grid/MatrixIndex.h"
 #include "ComponentDescription.h"
-#include "TileTargetingResult.h"
-#include "ComponentTargetingResult.h"
-#include "TargetingResult.h"
+#include "TargetingResult/TileTargetingResult.h"
+#include "TargetingResult/GridObjectTargetingResult.h"
+#include "TargetingResult/ComponentTargetingResult.h"
+#include "TargetingResult/TargetingResult.h"
 #include "ActionResult.generated.h"
 
 UCLASS(BlueprintType)
@@ -18,10 +22,14 @@ class MECHTURNBASED_API UActionResult : public UObject
 public:
 	UActionResult();
 
+	UFUNCTION(BlueprintCallable)
+		void Initialize(UMechComponent* ExecutorComponentToSet);
 	UFUNCTION()
-		UTileTargetingResult* AddTileTarget(TArray<FMatrixIndex> TargetTileIndex);
+		UTileTargetingResult* AddTileTarget(FMatrixIndex TargetTileIndex);
 	UFUNCTION()
-		void Initialize(UGridObjectComponent* ExecutorComponentToSet);
+		UGridObjectTargetingResult* AddGridObjectTarget(AGridObject* TargetGridObject);
+	UFUNCTION(BlueprintCallable)
+		void GetUpdatesToProcess(TArray<UTileDataUpdate*>& OutTileDataUpdates, TArray<UGridObjectComponentStateUpdate*>& OutGridObjCompStateUpdates);
 	UFUNCTION(BlueprintCallable)
 		FComponentDescription GetComponentDescription();
 	//UFUNCTION(BlueprintCallable)
@@ -31,12 +39,11 @@ public:
 	UFUNCTION(BlueprintCallable)
 		TArray<UTargetingResult*> GetTargetingResultsByTile(FMatrixIndex TileTarget);
 
-public:
-	UPROPERTY(BlueprintReadWrite)
-		UGridObjectComponent* ExecutorComponent = nullptr;
-
 private:
 	UPROPERTY()
+		TArray<UGridObjectTargetingResult*> GridObjectTargetingResults;
+	UPROPERTY()
 		TArray<UTileTargetingResult*> TileTargetingResults;
-
+	UPROPERTY()
+		UMechComponent* ExecutorComponent = nullptr;
 };

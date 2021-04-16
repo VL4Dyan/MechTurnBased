@@ -25,6 +25,11 @@ void UMechComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 	// ...
 }
 
+void UMechComponent::SetComponentOwner(ACombatUnit* CombatUnit)
+{
+	MechComponentOwner = CombatUnit;
+}
+
 void UMechComponent::SetCollisionBoxRef(UBoxComponent* CollisionBox)
 {
 	CollisionBoxRef = CollisionBox;
@@ -59,5 +64,10 @@ void UMechComponent::UpdateComponentPosition(FMatrixIndex TileIndexReplacement)
 FMatrixIndex UMechComponent::GetTileToHighlight()
 {
 	return ComponentFunctionalityPosition;
+}
+
+void UMechComponent::ExecuteAction(UTargetingResult* TargetingResult)
+{
+	MechComponentOwner->PerformAnimation(this, TargetingResult);
 }
 

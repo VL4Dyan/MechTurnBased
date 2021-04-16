@@ -7,24 +7,17 @@ UMovementLogic::UMovementLogic()
 
 }
 
-UActionResult* UMovementLogic::GetActionResult(FMatrixIndex StartTile, int Distance)
+void UMovementLogic::SetTargetsInActionResultViaMovementLogicProcessing(UActionResult* ActionResultToProcess, AGridObject* MovingGridObject, ESightDirection SightDirection, FCombatUnitSize UnitSize, FMatrixIndex StartTile, int Distance)
 {
-	UActionResult* Result = NewObject<UActionResult>();
+	TArray<FMatrixIndex> EndLocations = GetAllEndLocations(MovingGridObject, SightDirection, UnitSize, StartTile, Distance);
 
-	TArray<FMatrixIndex> EndLocations = GetAllEndLocations(StartTile, Distance);
-	
 	for (FMatrixIndex TileIndex : EndLocations)
 	{
-		TArray<FMatrixIndex> TileIndexArray;
-		TileIndexArray.Add(TileIndex);
-
-		Result->AddTileTarget(TileIndexArray);
+		ActionResultToProcess->AddTileTarget(TileIndex);
 	}
-
-	return Result;
 }
 
-TArray<FMatrixIndex> UMovementLogic::GetAllEndLocations(FMatrixIndex StartingTile, int Distance)
+TArray<FMatrixIndex> UMovementLogic::GetAllEndLocations(AGridObject* MovingGridObject, ESightDirection SightDirection, FCombatUnitSize UnitSize, FMatrixIndex StartingTile, int Distance)
 {
 	TArray<FMatrixIndex> Result;
 	int MovesLeft = Distance;
@@ -32,19 +25,64 @@ TArray<FMatrixIndex> UMovementLogic::GetAllEndLocations(FMatrixIndex StartingTil
 	Result.Add(StartingTile);
 	CurrentArrayEndingIndex = Result.Num();
 
+	FCombatUnitSize RelativeSize;
+	if (SightDirection == ESightDirection::Direction_East || SightDirection == ESightDirection::Direction_West)
+	{
+		RelativeSize = FCombatUnitSize(UnitSize.YWidth, UnitSize.XLength, UnitSize.ZHeight);
+	}
+	else
+	{
+		RelativeSize = UnitSize;
+	}
+
 	while (MovesLeft > 0 && CurrentArrayStartingIndex != CurrentArrayEndingIndex)
 	{
 		MovesLeft--;
 
 		for (int i = CurrentArrayStartingIndex; i < CurrentArrayEndingIndex; i++)
 		{
-			TArray<FMatrixIndex> TempIndexesArray = GetNeighbouringTiles(Result[i]);
+			TArray<FMatrixIndex> TempIndexesArray = GetNeighbouringTiles(Result[i], MovingGridObject);
 
 			for (int j = 0; j < TempIndexesArray.Num(); j++)
 			{
 				if (!Result.Contains(TempIndexesArray[j]))
 				{
-					Result.Add(TempIndexesArray[j]);
+					bool bIsAreaFree = true;
+
+					for (int x = 0; x < RelativeSize.XLength; x++)
+					{
+						for (int y = 0; y < RelativeSize.YWidth; y++)
+						{
+							for (int z = 0; z < RelativeSize.ZHeight; z++)
+							{
+								FTileData CurrTileData;
+								FMatrixIndex CurrIndex = TempIndexesArray[j];
+								CurrIndex.IndexX -= x;
+								CurrIndex.IndexY -= y;
+								CurrIndex.IndexZ += z;
+
+								if (!(CombatGridManagerRef->TryGetTileDataByIndex(CurrIndex, CurrTileData) && (CurrTileData.TileHolder == nullptr || CurrTileData.TileHolder == MovingGridObject)))
+								{
+									bIsAreaFree = false;
+									break;
+								}
+							}
+							if (!bIsAreaFree)
+							{
+								break;
+							}
+						}
+
+						if (!bIsAreaFree)
+						{
+							break;
+						}
+					}
+
+					if (bIsAreaFree)
+					{
+						Result.Add(TempIndexesArray[j]);
+					}
 				}
 			}
 		}
@@ -57,38 +95,49 @@ TArray<FMatrixIndex> UMovementLogic::GetAllEndLocations(FMatrixIndex StartingTil
 	return Result;
 }
 
-TArray<FMatrixIndex> UMovementLogic::GetNeighbouringTiles(FMatrixIndex TileIndex)
+TArray<FMatrixIndex> UMovementLogic::GetNeighbouringTiles(FMatrixIndex TileIndex, AGridObject* GridObjectToIgnore)
 {
 	TArray<FMatrixIndex> Result;
 
+	//same level
 	for (int x = -1; x <= 1; x++)
 	{
 		for (int y = -1; y <= 1; y++)
 		{
-			FMatrixIndex CurrentIndex = FMatrixIndex(TileIndex.IndexX - x, TileIndex.IndexY - y, TileIndex.IndexZ);
-			FTileData CurrentTileData;
-			if (CurrentIndex != TileIndex && CombatGridManagerRef->TryGetTileDataByIndex(CurrentIndex, CurrentTileData) && !CurrentTileData.bIsVoid
-				&& CurrentTileData.TileHolder == nullptr)
+			if (x == 0 || y == 0)
 			{
-				Result.Add(CurrentIndex);
+				FMatrixIndex CheckedTileIndex = FMatrixIndex(TileIndex.IndexX - x, TileIndex.IndexY - y, TileIndex.IndexZ);
+				FMatrixIndex PlatformIndex = FMatrixIndex(TileIndex.IndexX - x, TileIndex.IndexY - y, TileIndex.IndexZ - 1);
+				FTileData CheckedTileData, PlatformTileData;
+
+				if (CheckedTileIndex != TileIndex && CombatGridManagerRef->TryGetTileDataByIndex(CheckedTileIndex, CheckedTileData) && CheckedTileData.bIsVoid
+					&& (CheckedTileData.TileHolder == nullptr || CheckedTileData.TileHolder == GridObjectToIgnore)
+					&& CombatGridManagerRef->TryGetTileDataByIndex(PlatformIndex, PlatformTileData) && !PlatformTileData.bIsVoid)
+				{
+					Result.Add(CheckedTileIndex);
+				}
 			}
 		}
 	}
 
 	//lower level
-	for (int x = -1; x <= 1; x++) 
+	for (int x = -1; x <= 1; x++)
 	{
 		for (int y = -1; y <= 1; y++)
 		{
-			FMatrixIndex CurrentIndex = FMatrixIndex(x, y, TileIndex.IndexZ - 1);
-			FMatrixIndex ObstacleIndex = FMatrixIndex(x, y, TileIndex.IndexZ);
-			FTileData TileDataOfCurrentIndex;
-			FTileData TileDataOfPotentialObstacle;
-			if (CombatGridManagerRef->TryGetTileDataByIndex(CurrentIndex, TileDataOfCurrentIndex) && !TileDataOfCurrentIndex.bIsVoid
-				&& CombatGridManagerRef->TryGetTileDataByIndex(ObstacleIndex, TileDataOfPotentialObstacle) && TileDataOfPotentialObstacle.bIsVoid
-				&& TileDataOfCurrentIndex.TileHolder == nullptr)
+			if (x == 0 || y == 0)
 			{
-				Result.Add(CurrentIndex);
+				FMatrixIndex CheckedTileIndex = FMatrixIndex(TileIndex.IndexX - x, TileIndex.IndexY - y, TileIndex.IndexZ - 1);
+				FMatrixIndex PlatformIndex = FMatrixIndex(TileIndex.IndexX - x, TileIndex.IndexY - y, TileIndex.IndexZ - 2);
+				FMatrixIndex PotentialObstacleIndex = FMatrixIndex(TileIndex.IndexX - x, TileIndex.IndexY - y, TileIndex.IndexZ);
+				FTileData CheckedTileData, PotentialObstacleTileData, PlatformTileData;
+				if (CombatGridManagerRef->TryGetTileDataByIndex(CheckedTileIndex, CheckedTileData) && CheckedTileData.bIsVoid
+					&& (CheckedTileData.TileHolder == nullptr || CheckedTileData.TileHolder == GridObjectToIgnore)
+					&& CombatGridManagerRef->TryGetTileDataByIndex(PotentialObstacleIndex, PotentialObstacleTileData) && PotentialObstacleTileData.bIsVoid
+					&& CombatGridManagerRef->TryGetTileDataByIndex(PlatformIndex, PlatformTileData) && !PlatformTileData.bIsVoid)
+				{
+					Result.Add(CheckedTileIndex);
+				}
 			}
 		}
 	}
@@ -98,16 +147,19 @@ TArray<FMatrixIndex> UMovementLogic::GetNeighbouringTiles(FMatrixIndex TileIndex
 	{
 		for (int y = -1; y <= 1; y++)
 		{
-			FMatrixIndex CurrentIndex = FMatrixIndex(x, y, TileIndex.IndexZ + 1);
-			FMatrixIndex ObstacleIndex = TileIndex;
-			ObstacleIndex.IndexZ++;
-			FTileData TileDataOfCurrentIndex;
-			FTileData TileDataOfPotentialObstacle;
-			if (CombatGridManagerRef->TryGetTileDataByIndex(CurrentIndex, TileDataOfCurrentIndex) && !TileDataOfCurrentIndex.bIsVoid
-				&& CombatGridManagerRef->TryGetTileDataByIndex(ObstacleIndex, TileDataOfPotentialObstacle) && TileDataOfPotentialObstacle.bIsVoid
-				&& TileDataOfCurrentIndex.TileHolder == nullptr)
+			if (x == 0 || y == 0)
 			{
-				Result.Add(CurrentIndex);
+				FMatrixIndex CheckedTileIndex = FMatrixIndex(TileIndex.IndexX - x, TileIndex.IndexY - y, TileIndex.IndexZ + 1);
+				FMatrixIndex PlatformIndex = FMatrixIndex(TileIndex.IndexX - x, TileIndex.IndexY - y, TileIndex.IndexZ);
+				FMatrixIndex PotentialObstacleIndex = FMatrixIndex(TileIndex.IndexX, TileIndex.IndexY, TileIndex.IndexZ + 1);
+				FTileData CheckedTileData, PotentialObstacleTileData, PlatformTileData;
+				if (CombatGridManagerRef->TryGetTileDataByIndex(CheckedTileIndex, CheckedTileData) && CheckedTileData.bIsVoid
+					&& (CheckedTileData.TileHolder == nullptr || CheckedTileData.TileHolder == GridObjectToIgnore)
+					&& CombatGridManagerRef->TryGetTileDataByIndex(PotentialObstacleIndex, PotentialObstacleTileData) && PotentialObstacleTileData.bIsVoid
+					&& CombatGridManagerRef->TryGetTileDataByIndex(PlatformIndex, PlatformTileData) && !PlatformTileData.bIsVoid)
+				{
+					Result.Add(CheckedTileIndex);
+				}
 			}
 		}
 	}
@@ -115,23 +167,68 @@ TArray<FMatrixIndex> UMovementLogic::GetNeighbouringTiles(FMatrixIndex TileIndex
 	return Result;
 }
 
-TArray<UPathNode*> UMovementLogic::GetNeighbouringPathNodes(UPathNode* CurrentNode, FMatrixIndex DestinationTile)
+TArray<UPathNode*> UMovementLogic::GetNeighbouringPathNodes(AGridObject* MovingGridObject, ESightDirection SightDirection, FCombatUnitSize UnitSize, UPathNode* CurrentNode, FMatrixIndex DestinationTile)
 {
 	TArray<UPathNode*> Result;
-	TArray<FMatrixIndex> NeighbouringTiles = GetNeighbouringTiles(CurrentNode->TileIndex);
+	TArray<FMatrixIndex> NeighbouringTiles = GetNeighbouringTiles(CurrentNode->TileIndex, MovingGridObject);
 
-	for (int i = 0; i < NeighbouringTiles.Num(); i++)
+	FCombatUnitSize RelativeSize;
+	if (SightDirection == ESightDirection::Direction_East || SightDirection == ESightDirection::Direction_West)
 	{
-		float EstimatedValue = sqrt(pow(NeighbouringTiles[i].IndexX - DestinationTile.IndexX, 2) + pow(NeighbouringTiles[i].IndexY - DestinationTile.IndexY, 2) + pow(NeighbouringTiles[i].IndexZ - DestinationTile.IndexZ, 2));
-		UPathNode* neighbor = NewObject<UPathNode>();
-		neighbor->Initialize(NeighbouringTiles[i], EstimatedValue);
-		Result.Add(neighbor);
+		RelativeSize = FCombatUnitSize(UnitSize.YWidth, UnitSize.XLength, UnitSize.ZHeight);
+	}
+	else
+	{
+		RelativeSize = UnitSize;
+	}
+
+	for (FMatrixIndex NeighbourTile : NeighbouringTiles)
+	{
+		bool bIsAreaFree = true;
+
+		for (int x = 0; x < RelativeSize.XLength; x++)
+		{
+			for (int y = 0; y < RelativeSize.YWidth; y++)
+			{
+				for (int z = 0; z < RelativeSize.ZHeight; z++)
+				{
+					FTileData CurrTileData;
+					FMatrixIndex CurrIndex = NeighbourTile;
+					CurrIndex.IndexX -= x;
+					CurrIndex.IndexY -= y;
+					CurrIndex.IndexZ += z;
+
+					if (!(CombatGridManagerRef->TryGetTileDataByIndex(CurrIndex, CurrTileData) && (CurrTileData.TileHolder == nullptr || CurrTileData.TileHolder == MovingGridObject)))
+					{
+						bIsAreaFree = false;
+						break;
+					}
+				}
+				if (!bIsAreaFree)
+				{
+					break;
+				}
+			}
+
+			if (!bIsAreaFree)
+			{
+				break;
+			}
+		}
+
+		if (bIsAreaFree)
+		{
+			float EstimatedValue = sqrt(pow(NeighbourTile.IndexX - DestinationTile.IndexX, 2) + pow(NeighbourTile.IndexY - DestinationTile.IndexY, 2) + pow(NeighbourTile.IndexZ - DestinationTile.IndexZ, 2));
+			UPathNode* neighbor = NewObject<UPathNode>();
+			neighbor->Initialize(NeighbourTile, EstimatedValue);
+			Result.Add(neighbor);
+		}
 	}
 
 	return Result;
 }
 
-TArray<FMatrixIndex> UMovementLogic::GetPath(FMatrixIndex StartTile, FMatrixIndex EndTile)
+TArray<FMatrixIndex> UMovementLogic::GetPath(AGridObject* MovingGridObject, ESightDirection SightDirection, FCombatUnitSize UnitSize, FMatrixIndex StartTile, FMatrixIndex EndTile)
 {
 	TArray<FMatrixIndex> Result;
 	bool PathIsFound = false;
@@ -156,7 +253,7 @@ TArray<FMatrixIndex> UMovementLogic::GetPath(FMatrixIndex StartTile, FMatrixInde
 		}
 		ClosedList.Add(CurrentNode);
 		OpenList.RemoveAt(0);
-		TArray<UPathNode*> Neighbours = GetNeighbouringPathNodes(CurrentNode, EndTile);
+		TArray<UPathNode*> Neighbours = GetNeighbouringPathNodes(MovingGridObject, SightDirection, UnitSize, CurrentNode, EndTile);
 
 		for (int i = 0; i < Neighbours.Num(); i++)
 		{

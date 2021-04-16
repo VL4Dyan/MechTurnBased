@@ -3,12 +3,14 @@
 #pragma once
 
 class UMechComponent;
+class UTargetingResult;
+class UMovementMechComponent;
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "../Grid/MatrixIndex.h"
 #include "../Teams.h"
-#include "SightDirection.h"
+#include "CombatUnitSize.h"
 #include "../CombatMode.h"
 #include "../GridObjects/GridObjectComponentState.h"
 #include "../GridObjects/GridObject.h"
@@ -25,41 +27,38 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	virtual bool TryToFall() override;
+	virtual TArray<UGridObjectComponent*> GetGridObjectComponentsOccupyingTileIndex(FMatrixIndex TileIndex) override;
+	virtual TArray<UActionResult*> GetActionResultArray() override;
+	virtual TArray<UGridObjectComponent*> GetGridObjectComponents() override;
+
+	UFUNCTION(BlueprintImplementableEvent)
+		void MoveAlongPath(const TArray<FVector>& Path);
+	UFUNCTION(BlueprintImplementableEvent)
+		void PerformAnimation(UMechComponent* ComponentExecutor, UTargetingResult* ResultsToVisualize);
 	UFUNCTION()
-		void AddMechComponent(UMechComponent* MechComponent);
+		bool TryPlaceCombatUnitOnTile(FMatrixIndex TileIndex);
 	UFUNCTION()
 		TArray<UMechComponent*> GetMechComponentsHavingCollisionBoxes();
 	UFUNCTION()
 		TArray<UMechComponent*> GetMechComponentsRepresentingFunctionality();
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 		UMechComponent* GetMechMovementComponent();
-
-	virtual TArray<UGridObjectComponent*> GetGridObjectComponentsOccupyingTileIndex(FMatrixIndex TileIndex) override;
+	UFUNCTION()
+		void DestroyCombatUnit();
 
 protected:
 	virtual void BeginPlay() override;
 
 	UFUNCTION(BlueprintCallable)
-		void UpdateUnitPosition(FMatrixIndex TileIndexReplacement);
+		void AddMechComponent(UMechComponent* MechComponent);
 
 public:
 	UPROPERTY(BlueprintReadWrite)
-		FMatrixIndex UnitTileIndex = FMatrixIndex(0, 0, 0);
-	UPROPERTY(BlueprintReadOnly, EditAnywhere)
-		float MovingSpeedScale = 1.0;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-		int MovingDistance = 2;
-	UPROPERTY(BlueprintReadWrite)
 		ETeams UnitOwner = ETeams::Team_Player;
 	UPROPERTY(BlueprintReadWrite)
-		ESightDirection UnitViewDirection = ESightDirection::Direction_North;
-	UPROPERTY(BlueprintReadWrite)
-		TArray<UMechComponent*> UnitMechComponents;
-
-	virtual TArray<UActionResult*> GetActionResultArray() override;
-	virtual TArray<UGridObjectComponent*> GetGridObjectComponents() override;
+		TArray<UMechComponent*> MechComponents;
 
 private:
 	UPROPERTY()
-		UMechComponent* MovementComponent = nullptr;
+		UMovementMechComponent* MovementMechComponent = nullptr;
 };

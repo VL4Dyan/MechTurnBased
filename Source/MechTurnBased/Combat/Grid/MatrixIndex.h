@@ -14,11 +14,11 @@ public:
 	FMatrixIndex();
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-		int IndexX = 0;
+		int IndexX;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-		int IndexY = 0;
+		int IndexY;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
-		int IndexZ = 0;
+		int IndexZ;
 };
 
 bool operator==(const FMatrixIndex& IndexOne, const FMatrixIndex& IndexTwo);

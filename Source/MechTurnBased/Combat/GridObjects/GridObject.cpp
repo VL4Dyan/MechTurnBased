@@ -32,6 +32,11 @@ EGridObjectType AGridObject::GetGridObjectType()
 	return GridObjectType;
 }
 
+TArray<FMatrixIndex> AGridObject::GetOccupiedTiles()
+{
+	return OccupiedTiles;
+}
+
 bool AGridObject::TryToFall()
 {
 	return false;

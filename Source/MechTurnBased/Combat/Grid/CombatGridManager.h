@@ -42,8 +42,10 @@ public:
 		void GetTileMeasurments(float& OutTileWidthLength, float& OutTileHeight);
 
 public:
-	float TileStep = 100;
-	float TileHeight = 100;
+	UPROPERTY()
+		float TileStep = 100;
+	UPROPERTY()
+		float TileHeight = 100;
 	UPROPERTY(BlueprintReadWrite)
 		int ScanRangeX = 20;
 	UPROPERTY(BlueprintReadWrite)

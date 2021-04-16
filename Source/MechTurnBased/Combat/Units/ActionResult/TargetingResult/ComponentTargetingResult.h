@@ -2,9 +2,9 @@
 
 #pragma once
 
-#include "../../GridObjects/GridObjectComponent.h"
-#include "GridObjectComponentStateUpdate.h"
-#include "TileDataUpdate.h"
+#include "../../../GridObjects/GridObjectComponent.h"
+#include "../DataUpdate/GridObjectComponentStateUpdate.h"
+#include "../DataUpdate/TileDataUpdate.h"
 #include "TargetingResult.h"
 #include "ComponentTargetingResult.generated.h"
 
@@ -21,12 +21,7 @@ public:
 	UFUNCTION()
 		void AddGridObjectComponentStateUpdate(UGridObjectComponent* GridObjCompRef);
 
-public:
-	UPROPERTY(BlueprintReadOnly)
+private:
+	UPROPERTY()
 		UGridObjectComponent* GridObjectComponent;
-
-	UPROPERTY(BlueprintReadOnly)
-		TArray<UTileDataUpdate*> TileUpdates;
-	UPROPERTY(BlueprintReadOnly)
-		TArray<UGridObjectComponentStateUpdate*> GridObjectComponentUpdates;
 };

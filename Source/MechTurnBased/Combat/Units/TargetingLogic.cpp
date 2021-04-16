@@ -8,10 +8,8 @@ UTargetingLogic::UTargetingLogic()
 
 }
 
-UActionResult* UTargetingLogic::GetTargetsViaLineTrace(FMatrixIndex PositionToLookFrom, int Range)
+void UTargetingLogic::SetTargetsInActionResultViaLineTrace(UActionResult* ActionResultToProcess, FMatrixIndex PositionToLookFrom, int Range)
 {
-	UActionResult* Result = NewObject<UActionResult>();
-
 	TArray<FMatrixIndex> PotentiallyTargetableTiles;
 	PotentiallyTargetableTiles.Append(GetTargetableIndexesInRange(PositionToLookFrom, Range, true));
 
@@ -27,55 +25,53 @@ UActionResult* UTargetingLogic::GetTargetsViaLineTrace(FMatrixIndex PositionToLo
 		}
 	}
 
-	for (int i = 0; i < PotentiallyTargetableTiles.Num(); i++)
+	for (AGridObject* GridObj : PotentiallyTargetableGridObjects)
 	{
-		TArray<UGridObjectComponent*> TargetableGridObjectComponents = GetTargetableGridObjectComponents(PositionToLookFrom, PotentiallyTargetableTiles[i]);
+		TArray<UGridObjectComponent*> TargetableGridObjectComponents = GetTargetableGridObjectComponents(PositionToLookFrom, GridObj, Range);
+
 		if (TargetableGridObjectComponents.Num() > 0)
 		{
-			TArray<FMatrixIndex> AffectedTiles;
-			AffectedTiles.Add(PotentiallyTargetableTiles[i]);
+			UGridObjectTargetingResult* GridObjTargetingRes = ActionResultToProcess->AddGridObjectTarget(GridObj);
 
-			UTileTargetingResult* TileTargetingResult = Result->AddTileTarget(AffectedTiles);
-
-			for (int j = 0; j < TargetableGridObjectComponents.Num(); j++)
+			for (UGridObjectComponent* GridObjComp : TargetableGridObjectComponents)
 			{
-				UComponentTargetingResult* CompTargetingResult = TileTargetingResult->AddComponentTarget(TargetableGridObjectComponents[j]);
-
-				CompTargetingResult->AddGridObjectComponentStateUpdate(TargetableGridObjectComponents[j]);
+				UComponentTargetingResult* CompTargetingResult = GridObjTargetingRes->AddComponentTarget(GridObjComp);
 			}
 		}
 	}
-
-	return Result;
 }
 
-TArray<UGridObjectComponent*> UTargetingLogic::GetTargetableGridObjectComponents(FMatrixIndex PositionToLookFrom, FMatrixIndex TargetTileIndex)
+TArray<UGridObjectComponent*> UTargetingLogic::GetTargetableGridObjectComponents(FMatrixIndex PositionToLookFrom, AGridObject* TargetGridObject, int Range)
 {
 	TArray<UGridObjectComponent*> Result;
-	TArray<FVector> RayStartingPoints;
-	FTileData ExecutionerTileData, TargetTileData;
+	FTileData ExecutionerTileData;
 	TArray<UGridObjectComponent*> GridObjectComponents;
 
 	CombatGridManagerRef->TryGetTileDataByIndex(PositionToLookFrom, ExecutionerTileData);
-	CombatGridManagerRef->TryGetTileDataByIndex(TargetTileIndex, TargetTileData);
 
-	RayStartingPoints.Add(FVector(ExecutionerTileData.AbsoluteCoordinates.X, ExecutionerTileData.AbsoluteCoordinates.Y, ExecutionerTileData.AbsoluteCoordinates.Z + TileHeight));
-	RayStartingPoints.Append(GetExecutionerSidePoints(ExecutionerTileData.AbsoluteCoordinates, TargetTileData.AbsoluteCoordinates));
+	GridObjectComponents = TargetGridObject->GetGridObjectComponents();
 
-	if (TargetTileData.TileHolder != nullptr)
+	for (UGridObjectComponent* GridObjComp : GridObjectComponents)
 	{
-		GridObjectComponents = TargetTileData.TileHolder->GetGridObjectComponentsOccupyingTileIndex(TargetTileIndex);
-	}
+		UBoxComponent* CollisionBox = GridObjComp->GetCollisionRef();
+		TArray<FVector> RayStartingPoints;
+		FVector ExecutionerCentrePoint = FVector(ExecutionerTileData.AbsoluteCoordinates.X, ExecutionerTileData.AbsoluteCoordinates.Y, ExecutionerTileData.AbsoluteCoordinates.Z + TileHeight);
+		int DistanceToComp;
 
-	for (int i = 0; i < GridObjectComponents.Num(); i++)
-	{
-		UBoxComponent* CollisionBox = GridObjectComponents[i]->GetCollisionRef();
-		for (int j = 0; j < RayStartingPoints.Num(); j++)
+		RayStartingPoints.Add(ExecutionerCentrePoint);
+		RayStartingPoints.Append(GetExecutionerSidePoints(ExecutionerTileData.AbsoluteCoordinates, TargetGridObject->GetActorLocation()));
+
+		DistanceToComp = GetDistanceBetweenPoints(ExecutionerCentrePoint, CollisionBox->GetComponentLocation()) / TileWidthLength;
+
+		if (DistanceToComp <= Range)
 		{
-			if (!AnyObstaclesOnLine(RayStartingPoints[j], CollisionBox->GetComponentLocation(), CollisionBox, ExecutionerTileData.TileHolder))
+			for (int j = 0; j < RayStartingPoints.Num(); j++)
 			{
-				Result.Add(GridObjectComponents[i]);
-				break;
+				if (!AnyObstaclesOnLine(RayStartingPoints[j], CollisionBox->GetComponentLocation(), CollisionBox, ExecutionerTileData.TileHolder))
+				{
+					Result.Add(GridObjComp);
+					break;
+				}
 			}
 		}
 	}
@@ -160,6 +156,15 @@ TArray<FMatrixIndex> UTargetingLogic::GetTargetableIndexesInRange(FMatrixIndex P
 			}
 		}
 	}
+
+	return Result;
+}
+
+float UTargetingLogic::GetDistanceBetweenPoints(FVector PointOne, FVector PointTwo)
+{
+	float Result;
+
+	Result = sqrt(pow(PointOne.X - PointTwo.X, 2) + pow(PointOne.Y - PointTwo.Y, 2) + pow(PointTwo.Z - PointTwo.Z, 2));
 
 	return Result;
 }

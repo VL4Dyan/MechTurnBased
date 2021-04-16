@@ -2,7 +2,9 @@
 
 FMatrixIndex::FMatrixIndex()
 {
-
+	IndexX = 0;
+	IndexY = 0;
+	IndexZ = 0;
 }
 
 FMatrixIndex::FMatrixIndex(int X, int Y, int Z)

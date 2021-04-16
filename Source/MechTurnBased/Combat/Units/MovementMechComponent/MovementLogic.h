@@ -2,11 +2,15 @@
 
 #pragma once
 
+class AGridObject;
+
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "../ActionResult/ActionResult.h"
 #include "../../Grid/CombatGridManager.h"
 #include "../../CombatMode.h"
+#include "../CombatUnitSize.h"
+#include "../SightDirection.h"
 #include "PathNode.h"
 #include "MovementLogic.generated.h"
 
@@ -20,17 +24,17 @@ public:
 	UMovementLogic();
 
 	UFUNCTION(BlueprintCallable)
-		UActionResult* GetActionResult(FMatrixIndex StartTile, int Distance);
+		void SetTargetsInActionResultViaMovementLogicProcessing(UActionResult* ActionResultToProcess, AGridObject* MovingGridObject, ESightDirection SightDirection, FCombatUnitSize UnitSize, FMatrixIndex StartTile, int Distance);
 	UFUNCTION(BlueprintCallable)
-		TArray<FMatrixIndex> GetPath(FMatrixIndex StartTile, FMatrixIndex EndTile);
+		TArray<FMatrixIndex> GetPath(AGridObject* MovingGridObject, ESightDirection SightDirection, FCombatUnitSize UnitSize, FMatrixIndex StartTile, FMatrixIndex EndTile);
 	UFUNCTION(BlueprintCallable)
-		TArray<FMatrixIndex> GetAllEndLocations(FMatrixIndex StartingTile, int Distance);
+		TArray<FMatrixIndex> GetAllEndLocations(AGridObject* MovingGridObject, ESightDirection SightDirection, FCombatUnitSize UnitSize, FMatrixIndex StartingTile, int Distance);
 
 private:
 	UFUNCTION()
-		TArray<FMatrixIndex> GetNeighbouringTiles(FMatrixIndex TileIndex);
+		TArray<FMatrixIndex> GetNeighbouringTiles(FMatrixIndex TileIndex, AGridObject* GridObjectToIgnore);
 	UFUNCTION()
-		TArray<UPathNode*> GetNeighbouringPathNodes(UPathNode* CurrentNode, FMatrixIndex DestinationTile);
+		TArray<UPathNode*> GetNeighbouringPathNodes(AGridObject* MovingGridObject, ESightDirection SightDirection, FCombatUnitSize UnitSize, UPathNode* CurrentNode, FMatrixIndex DestinationTile);
 
 
 public:

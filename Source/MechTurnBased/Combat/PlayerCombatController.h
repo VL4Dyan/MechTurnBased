@@ -10,9 +10,9 @@
 #include "Grid/TileData.h"
 #include "Teams.h"
 #include "Grid/CombatGridManager.h"
-#include "Units/ActionResult/ComponentTargetingResult.h"
-#include "Units/ActionResult/TileDataUpdate.h"
-#include "Units/ActionResult/GridObjectComponentStateUpdate.h"
+#include "Units/ActionResult/TargetingResult/ComponentTargetingResult.h"
+#include "Units/ActionResult/DataUpdate/TileDataUpdate.h"
+#include "Units/ActionResult/DataUpdate/GridObjectComponentStateUpdate.h"
 #include "PlayerCombatController.generated.h"
 
 UENUM(BlueprintType)

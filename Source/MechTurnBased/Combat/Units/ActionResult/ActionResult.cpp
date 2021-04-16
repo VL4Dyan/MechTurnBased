@@ -7,17 +7,31 @@ UActionResult::UActionResult()
 
 }
 
-UTileTargetingResult* UActionResult::AddTileTarget(TArray<FMatrixIndex> TargetTileIndex)
+UTileTargetingResult* UActionResult::AddTileTarget(FMatrixIndex TargetTileIndex)
 {
-	UTileTargetingResult* TileTarget = NewObject<UTileTargetingResult>();
-	TileTarget->Initialize(TargetTileIndex);
+	UTileTargetingResult* TileTargetingRes = NewObject<UTileTargetingResult>();
+	TileTargetingRes->SetExecutorComponent(ExecutorComponent);
 
-	TileTargetingResults.Add(TileTarget);
+	TileTargetingRes->Initialize(TargetTileIndex);
 
-	return TileTarget;
+	TileTargetingResults.Add(TileTargetingRes);
+
+	return TileTargetingRes;
 }
 
-void UActionResult::Initialize(UGridObjectComponent* ExecutorComponentToSet)
+UGridObjectTargetingResult* UActionResult::AddGridObjectTarget(AGridObject* TargetGridObject)
+{
+	UGridObjectTargetingResult* GridObjTargetingRes = NewObject<UGridObjectTargetingResult>();
+	GridObjTargetingRes->SetExecutorComponent(ExecutorComponent);
+
+	GridObjTargetingRes->Initialize(TargetGridObject);
+
+	GridObjectTargetingResults.Add(GridObjTargetingRes);
+
+	return GridObjTargetingRes;
+}
+
+void UActionResult::Initialize(UMechComponent* ExecutorComponentToSet)
 {
 	ExecutorComponent = ExecutorComponentToSet;
 }
@@ -40,7 +54,7 @@ TArray<FMatrixIndex> UActionResult::GetTilesToHighlight()
 
 	for (UTileTargetingResult* TileTarget : TileTargetingResults)
 	{
-		Result.Append(TileTarget->GetTileIndexArray());
+		Result.Add(TileTarget->GetTileIndex());
 	}
 
 	return Result;
@@ -50,29 +64,49 @@ TArray<UTargetingResult*> UActionResult::GetTargetingResultsByTile(FMatrixIndex 
 {
 	TArray<UTargetingResult*> Result;
 
-	for (UTileTargetingResult* TileTargetingResult : TileTargetingResults)
+	for (UTileTargetingResult* TileTargetingRes : TileTargetingResults)
 	{
-		TArray<FMatrixIndex> TileIndexArray = TileTargetingResult->GetTileIndexArray();
-
-		for (FMatrixIndex TileIndex : TileIndexArray)
+		if (TileTargetingRes->TileIndex == TileTarget)
 		{
-			if (TileIndex == TileTarget)
-			{
-				if (TileTargetingResult->GridObjectComponentUpdates.Num() > 0 || TileTargetingResult->TileUpdates.Num() > 0)
-				{
-					Result.Add(TileTargetingResult);
-				}
+			Result.Add(TileTargetingRes);
 
-				for (UComponentTargetingResult* CompTargetingResult : TileTargetingResult->ComponentTargetingResults)
-				{
-					Result.Add(CompTargetingResult);
-				}
+			return Result;
+		}
+	}
 
-				return Result;
-			}
+	for (UGridObjectTargetingResult* GridObjTargetingRes : GridObjectTargetingResults)
+	{
+		TArray<FMatrixIndex> TilesOccupiedByGridObject = GridObjTargetingRes->GridObject->GetOccupiedTiles();
+
+		if (TilesOccupiedByGridObject.Contains(TileTarget))
+		{
+			Result.Add(GridObjTargetingRes);
+			Result.Append(GridObjTargetingRes->ComponentTargetingResults);
+
+			break;
 		}
 	}
 
 	return Result;
 }
 
+void UActionResult::GetUpdatesToProcess(TArray<UTileDataUpdate*>& OutTileDataUpdates, TArray<UGridObjectComponentStateUpdate*>& OutGridObjCompStateUpdates)
+{
+	for (UTileTargetingResult* TileTargetingRes : TileTargetingResults)
+	{
+		OutTileDataUpdates.Append(TileTargetingRes->TileUpdates);
+		OutGridObjCompStateUpdates.Append(TileTargetingRes->GridObjectComponentUpdates);
+	}
+
+	for (UGridObjectTargetingResult* GridObjTargetingRes : GridObjectTargetingResults)
+	{
+		OutTileDataUpdates.Append(GridObjTargetingRes->TileUpdates);
+		OutGridObjCompStateUpdates.Append(GridObjTargetingRes->GridObjectComponentUpdates);
+
+		for (UTargetingResult* GridObjCompTargetingRes : GridObjTargetingRes->ComponentTargetingResults)
+		{
+			OutTileDataUpdates.Append(GridObjCompTargetingRes->TileUpdates);
+			OutGridObjCompStateUpdates.Append(GridObjCompTargetingRes->GridObjectComponentUpdates);
+		}
+	}
+}

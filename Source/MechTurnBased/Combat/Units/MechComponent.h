@@ -2,6 +2,8 @@
 
 #pragma once
 
+class UActionResult;
+
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
 #include "Components/BoxComponent.h"
@@ -9,7 +11,6 @@
 #include "../Grid/MatrixIndex.h"
 #include "../GridObjects/GridObjectComponentState.h"
 #include "../GridObjects/GridObjectComponent.h"
-#include "ActionResult/ActionResult.h"
 #include "MechComponent.generated.h"
 
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent), Abstract, Blueprintable)
@@ -23,6 +24,8 @@ public:
 
 	virtual UBoxComponent* GetCollisionRef() override;
 
+	UFUNCTION(BlueprintCallable)
+		void SetComponentOwner(ACombatUnit* CombatUnit);
 	UFUNCTION()
 		bool TryGetSubComponents(TArray<UMechComponent*>& OutMechComponents);
 	UFUNCTION()
@@ -31,6 +34,8 @@ public:
 		FGridObjectComponentState GetMechComponentState();
 	UFUNCTION()
 		void UpdateComponentPosition(FMatrixIndex TileIndexReplacement);
+	UFUNCTION()
+		virtual void ExecuteAction(UTargetingResult* TargetingResult);
 	UFUNCTION(BlueprintImplementableEvent)
 		UActionResult* GetActionResult();
 
@@ -42,11 +47,9 @@ protected:
 	UFUNCTION()
 		void SetCollisionBoxRef(UBoxComponent* CollisionBox);
 
-public:
-	UPROPERTY(BlueprintReadWrite)
-		ACombatUnit* Owner = nullptr;
-
 protected:
+	UPROPERTY(BlueprintReadOnly)
+		ACombatUnit* MechComponentOwner = nullptr;
 	UPROPERTY(BlueprintReadOnly)
 		FMatrixIndex ComponentFunctionalityPosition = FMatrixIndex(0, 0, 0);
 	UPROPERTY()

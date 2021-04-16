@@ -21,8 +21,11 @@ void ACombatMode::ScanGrid(ATileChecker* TileChecker)
 			{
 				FMatrixIndex Index(IndexX, IndexY, IndexZ);
 				FTileData CurrentTile;
+				FVector LocationForTilechecker;
+
 				CombatGridManager->TryGetTileDataByIndex(Index, CurrentTile);
-				TileChecker->SetActorLocation(CurrentTile.AbsoluteCoordinates);
+				LocationForTilechecker = CurrentTile.AbsoluteCoordinates + (CombatGridManager->TileHeight / 2);
+				TileChecker->SetActorLocation(LocationForTilechecker);
 				CurrentTile = TileChecker->Scan(CurrentTile);
 
 				if (CurrentTile.SpawnPoint != nullptr)
@@ -39,6 +42,7 @@ void ACombatMode::ScanGrid(ATileChecker* TileChecker)
 
 bool ACombatMode::PlaceCombatUnitOnGrid(ACombatUnit* CombatUnit, ASpawnPoint* SpawnPoint)
 {
+	//This requires a rework
 	FMatrixIndex ResultingSpawnPoint;
 	bool bFunctionSuccess = false;
 
@@ -48,8 +52,7 @@ bool ACombatMode::PlaceCombatUnitOnGrid(ACombatUnit* CombatUnit, ASpawnPoint* Sp
 		if (CombatGridManager->TryGetTileDataByIndex(ResultingSpawnPoint, TileDataToUpdate))
 		{
 			TileDataToUpdate.TileHolder = Cast<AGridObject>(CombatUnit);
-			CombatUnit->UnitTileIndex = ResultingSpawnPoint;
-			CombatUnit->SetActorLocation(TileDataToUpdate.AbsoluteCoordinates);
+			CombatUnit->TryPlaceCombatUnitOnTile(ResultingSpawnPoint);
 			CombatUnit->UnitOwner = SpawnPoint->Team;
 
 			if (CombatGridManager->TryUpdateTileData(ResultingSpawnPoint, TileDataToUpdate))

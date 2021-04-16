@@ -12,8 +12,8 @@
 #include "../GridObjects/GridObjectComponent.h"
 #include "../GridObjects/GridObjectType.h"
 #include "ActionResult/ActionResult.h"
-#include "ActionResult/TileTargetingResult.h"
-#include "ActionResult/ComponentTargetingResult.h"
+#include "ActionResult/TargetingResult/TileTargetingResult.h"
+#include "ActionResult/TargetingResult/ComponentTargetingResult.h"
 #include "TargetingLogic.generated.h"
 
 
@@ -26,17 +26,19 @@ public:
 	UTargetingLogic();
 
 	UFUNCTION(BlueprintCallable)
-		UActionResult* GetTargetsViaLineTrace(FMatrixIndex PositionToLookFrom, int Range);
+		void SetTargetsInActionResultViaLineTrace(UActionResult* ActionResultToProcess, FMatrixIndex PositionToLookFrom, int Range);
 
 private:
 	UFUNCTION()
 		TArray<FMatrixIndex> GetTargetableIndexesInRange(FMatrixIndex PositionToLookFrom, int Range, bool bIgnoreTilesWithoutUnits);
 	UFUNCTION()
-		TArray<UGridObjectComponent*> GetTargetableGridObjectComponents(FMatrixIndex PositionToLookFrom, FMatrixIndex TargetTileIndex);
+		TArray<UGridObjectComponent*> GetTargetableGridObjectComponents(FMatrixIndex PositionToLookFrom, AGridObject* TargetGridObject, int Range);
 	UFUNCTION()
 		TArray <FVector> GetExecutionerSidePoints(FVector ExecutionerCentre, FVector TargetCentre);
 	UFUNCTION()
 		bool AnyObstaclesOnLine(FVector StartingPoint, FVector EndingPoint, UPrimitiveComponent* ComponentToTrace, AGridObject* ActorToIgnore);
+	UFUNCTION()
+		float GetDistanceBetweenPoints(FVector PointOne, FVector PointTwo);
 
 public:
 	UPROPERTY(BlueprintReadWrite)

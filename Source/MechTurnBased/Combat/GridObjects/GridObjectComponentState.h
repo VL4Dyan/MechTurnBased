@@ -15,6 +15,6 @@ public:
 	FGridObjectComponentState(int HullPointsToSet);
 	FGridObjectComponentState();
 
-	UPROPERTY()
+	UPROPERTY(BlueprintReadWrite)
 		int HullPoints = 0;
 };
