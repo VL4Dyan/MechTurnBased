@@ -37,6 +37,8 @@ public:
 		virtual bool TryGetGridObjectTileIndex(FMatrixIndex& OutTileIndex);
 	UFUNCTION()
 		virtual TArray<UGridObjectComponent*> GetGridObjectComponentsOccupyingTileIndex(FMatrixIndex TileIndex);
+	UFUNCTION()
+		virtual bool TryToCrush(FMatrixIndex CrushedTile, FCombatUnitSize CrushingArea);
 
 protected:
 	virtual void BeginPlay() override;

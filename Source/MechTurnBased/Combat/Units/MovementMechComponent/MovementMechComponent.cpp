@@ -2,10 +2,24 @@
 
 
 #include "MovementMechComponent.h"
+#include "../../GridObjects/GridObject.h"
 
 UMovementMechComponent::UMovementMechComponent()
 {
 
+}
+
+FCombatUnitSize UMovementMechComponent::GetRelativeUnitSize()
+{
+	FCombatUnitSize RelativeSize = UnitSize;
+
+	if (UnitViewDirection == ESightDirection::Direction_West || UnitViewDirection == ESightDirection::Direction_East)
+	{
+		RelativeSize.XLength = UnitSize.YWidth;
+		RelativeSize.YWidth = UnitSize.XLength;
+	}
+
+	return RelativeSize;
 }
 
 void UMovementMechComponent::ExecuteAction(UTargetingResult* TargetingResult)
@@ -75,12 +89,7 @@ void UMovementMechComponent::ExecuteAction(UTargetingResult* TargetingResult)
 
 void UMovementMechComponent::RespondToPush(ESightDirection PushDirection, int Power)
 {
-	FCombatUnitSize RelativeSize = UnitSize;
-	if (UnitViewDirection == ESightDirection::Direction_West || UnitViewDirection == ESightDirection::Direction_East)
-	{
-		RelativeSize.XLength = UnitSize.YWidth;
-		RelativeSize.YWidth = UnitSize.XLength;
-	}
+	FCombatUnitSize RelativeSize = GetRelativeUnitSize();
 
 	int XAxisModifier = 0, YAxisModifier = 0, XOffset = 0, YOffset = 0;
 	switch (PushDirection)
@@ -146,110 +155,97 @@ void UMovementMechComponent::RespondToPush(ESightDirection PushDirection, int Po
 bool UMovementMechComponent::TryToFall()
 {
 	bool Result = false;
-	TArray<FMatrixIndex> IndexesOfExistingPlatforms;
+	bool PlacementOutOfBounds = false;
+	FMatrixIndex CurrentUnitTileIndex = UnitTileIndex;
+	TArray<FMatrixIndex> IndexesOfCurrentObstacles;
+	FCombatUnitSize RelativeSize = GetRelativeUnitSize();
 
-	FCombatUnitSize RelativeSize = UnitSize;
-	if (UnitViewDirection == ESightDirection::Direction_West || UnitViewDirection == ESightDirection::Direction_East)
+	while (CheckIfUnitShouldFall(CurrentUnitTileIndex, RelativeSize, IndexesOfCurrentObstacles, PlacementOutOfBounds))
 	{
-		RelativeSize.XLength = UnitSize.YWidth;
-		RelativeSize.YWidth = UnitSize.XLength;
-	}
-
-	for (int x = 0; x < RelativeSize.XLength; x++)
-	{
-		for (int y = 0; y < RelativeSize.YWidth; y++)
+		if (PlacementOutOfBounds)
 		{
-			FMatrixIndex CurrentlyCheckedTileIndex = UnitTileIndex;
-			CurrentlyCheckedTileIndex.IndexX -= x;
-			CurrentlyCheckedTileIndex.IndexY -= y;
-			CurrentlyCheckedTileIndex.IndexZ -= 1;
-
-			FTileData CurrentlyCheckedTileData;
-			if (CombatGridManagerRef->TryGetTileDataByIndex(CurrentlyCheckedTileIndex, CurrentlyCheckedTileData) && !CurrentlyCheckedTileData.bIsVoid)
-			{
-				IndexesOfExistingPlatforms.Add(CurrentlyCheckedTileIndex);
-			}
+			MechComponentOwner->DestroyCombatUnit();
+			break;
 		}
-	}
 
-	if (IndexesOfExistingPlatforms.Num() == 0)
-	{
-		Result = true;
-		bool bAnyPlatformFound = false;
+		//Any building component creating a platform for this unit gets immediately destroyed.
+		//If any static platform (formed by map pieces) is supporting this unit, the unit shifts towards the way with the least amount of affected static platforms.
 
-		FMatrixIndex CurrentIndex = UnitTileIndex;
-		CurrentIndex.IndexZ--;
-		FTileData CurrentTileData;
+		bool AnyUnbreakableObstacle = false;
+		TArray<AGridObject*> CrushedGridObjects;
+		int XAxisWeight = 0, YAxisWeight = 0;
+		float CentreX, CentreY;
+		CentreX = CurrentUnitTileIndex.IndexX - ((float)RelativeSize.XLength / 2 - 0.5);
+		CentreY = CurrentUnitTileIndex.IndexY - ((float)RelativeSize.YWidth / 2 - 0.5);
 
-		while (CombatGridManagerRef->TryGetTileDataByIndex(CurrentIndex, CurrentTileData))
+		for (FMatrixIndex TileIndex : IndexesOfCurrentObstacles)
 		{
-			for (int x = 0; x < RelativeSize.XLength; x++)
-			{
-				for (int y = 0; y < RelativeSize.YWidth; y++)
-				{
-					FMatrixIndex TileIndexOfThisLevel = CurrentIndex;
-					TileIndexOfThisLevel.IndexX -= x;
-					TileIndexOfThisLevel.IndexY -= y;
+			FTileData CheckedTileData;
 
-					if (CombatGridManagerRef->TryGetTileDataByIndex(TileIndexOfThisLevel, CurrentTileData) && !CurrentTileData.bIsVoid)
+			if (CombatGridManagerRef->TryGetTileDataByIndex(TileIndex, CheckedTileData))
+			{
+				if (!CheckedTileData.bIsVoid && CheckedTileData.TileHolder == nullptr)
+				{
+					AnyUnbreakableObstacle = true;
+
+					if (TileIndex.IndexX > CentreX)
 					{
-						bAnyPlatformFound = true;
-						break;
+						XAxisWeight++;
+					}
+					else
+					{
+						if (TileIndex.IndexX < CentreX)
+						{
+							XAxisWeight--;
+						}
+					}
+
+					if (TileIndex.IndexY > CentreY)
+					{
+						YAxisWeight++;
+					}
+					else
+					{
+						if (TileIndex.IndexY < CentreY)
+						{
+							YAxisWeight--;
+						}
 					}
 				}
-
-				if (bAnyPlatformFound)
+				else
 				{
-					break;
+					if (!CrushedGridObjects.Contains(CheckedTileData.TileHolder))
+					{
+						CrushedGridObjects.Add(CheckedTileData.TileHolder);
+					}
 				}
 			}
+		}
 
-			if (bAnyPlatformFound)
+		for (AGridObject* GridObjRef : CrushedGridObjects)
+		{
+			if (!GridObjRef->TryToCrush(CurrentUnitTileIndex, RelativeSize))
 			{
-				break;
+				AnyUnbreakableObstacle = true;
+			}
+		}
+
+		FMatrixIndex CurrentTileIndexUpd;
+
+		if (AnyUnbreakableObstacle)
+		{
+			if (TryGetShiftedUnitTileIndex(CurrentUnitTileIndex, RelativeSize, XAxisWeight, YAxisWeight, CurrentTileIndexUpd))
+			{
+				CurrentUnitTileIndex = CurrentTileIndexUpd;
 			}
 			else
 			{
-				CurrentIndex.IndexZ--;
+				MechComponentOwner->DestroyCombatUnit();
 			}
-		}
-
-		if (bAnyPlatformFound)
-		{
-			TArray<FVector> Path;
-
-			FTileData PathTileData;
-			CombatGridManagerRef->TryGetTileDataByIndex(UnitTileIndex, PathTileData);
-			Path.Add(PathTileData.AbsoluteCoordinates);
-
-			CombatGridManagerRef->TryGetTileDataByIndex(CurrentIndex, PathTileData);
-			Path.Add(PathTileData.AbsoluteCoordinates);
-
-			UnitTileIndex = CurrentIndex;
-			MechComponentOwner->MoveAlongPath(Path);
 		}
 		else
 		{
-			for (int x = 0; x < RelativeSize.XLength; x++)
-			{
-				for (int y = 0; y < RelativeSize.YWidth; y++)
-				{
-					for (int z = 0; z < RelativeSize.ZHeight; z++)
-					{
-						FMatrixIndex TileIndexOfUpdatedTile = UnitTileIndex;
-						TileIndexOfUpdatedTile.IndexX -= x;
-						TileIndexOfUpdatedTile.IndexY -= y;
-						TileIndexOfUpdatedTile.IndexZ += z;
-
-						FTileData TileDataUpdate;
-						CombatGridManagerRef->TryGetTileDataByIndex(TileIndexOfUpdatedTile, TileDataUpdate);
-						TileDataUpdate.TileHolder = nullptr;
-						CombatGridManagerRef->TryUpdateTileData(TileIndexOfUpdatedTile, TileDataUpdate);
-					}
-				}
-			}
-
-			MechComponentOwner->DestroyCombatUnit();
+			CurrentUnitTileIndex.IndexZ--;
 		}
 	}
 
@@ -258,12 +254,7 @@ bool UMovementMechComponent::TryToFall()
 
 bool UMovementMechComponent::TryAnchorUnitToTile(FMatrixIndex TileIndex)
 {
-	FCombatUnitSize RelativeSize = UnitSize;
-	if (UnitViewDirection == ESightDirection::Direction_West || UnitViewDirection == ESightDirection::Direction_East)
-	{
-		RelativeSize.XLength = UnitSize.YWidth;
-		RelativeSize.YWidth = UnitSize.XLength;
-	}
+	FCombatUnitSize RelativeSize = GetRelativeUnitSize();
 
 	bool bIsTileAcceptable = true;
 
@@ -344,4 +335,123 @@ bool UMovementMechComponent::TryAnchorUnitToTile(FMatrixIndex TileIndex)
 	{
 		return false;
 	}
+}
+
+bool UMovementMechComponent::CheckIfUnitShouldFall(FMatrixIndex CurrentUnitTileIndex, FCombatUnitSize RelativeUnitSize, TArray<FMatrixIndex>& OutObstacleTileIndexes, bool& OutPlacementOutOfBounds)
+{
+	bool Result = false;
+	TArray<FMatrixIndex> IndexesOfCurrentObstacles;
+	int PlatformsCount = 0;
+
+	//Checking if enough platforms support the unit ("unit part" there is any tile occupied by lower body of the unit).
+	for (int x = 0; x < RelativeUnitSize.XLength; x++)
+	{
+		for (int y = 0; y < RelativeUnitSize.YWidth; y++)
+		{
+			FMatrixIndex CurrentlyCheckedTileIndex = CurrentUnitTileIndex;
+			CurrentlyCheckedTileIndex.IndexX -= x;
+			CurrentlyCheckedTileIndex.IndexY -= y;
+			CurrentlyCheckedTileIndex.IndexZ -= 1;
+
+			FTileData CurrentlyCheckedTileData;
+			if (CombatGridManagerRef->TryGetTileDataByIndex(CurrentlyCheckedTileIndex, CurrentlyCheckedTileData))
+			{
+				if (!CurrentlyCheckedTileData.bIsVoid)
+				{
+					PlatformsCount++;
+					IndexesOfCurrentObstacles.Add(CurrentlyCheckedTileIndex);
+				}
+				else
+				{
+					if (CurrentlyCheckedTileData.TileHolder != nullptr)
+					{
+						IndexesOfCurrentObstacles.Add(CurrentlyCheckedTileIndex);
+					}
+				}
+			}
+			else
+			{
+				OutPlacementOutOfBounds = true;
+				OutObstacleTileIndexes = IndexesOfCurrentObstacles;
+				Result = true;
+
+				return Result;
+			}
+		}
+	}
+
+	float SupportedToUnsupportedUnitPartsRatio = (float)PlatformsCount / ((float)RelativeUnitSize.XLength * (float)RelativeUnitSize.YWidth);
+
+	if (SupportedToUnsupportedUnitPartsRatio <= 0.5)
+	{
+		Result = true;
+	}
+
+	OutObstacleTileIndexes = IndexesOfCurrentObstacles;
+	return Result;
+}
+
+bool UMovementMechComponent::TryGetShiftedUnitTileIndex(FMatrixIndex CurrentUnitTileIndex, FCombatUnitSize RelativeUnitSize, int XAxisWeight, int YAxisWeight, FMatrixIndex& OutNewUnitTileIndex)
+{
+	bool Result = false;
+
+	int XAxisShiftPriority = 1, YAxisShiftPriority = 1;
+
+	if (XAxisWeight > 0)
+	{
+		XAxisShiftPriority = -1;
+	}
+	if (YAxisWeight > 0)
+	{
+		YAxisShiftPriority = -1;
+	}
+
+	for (int XModifier = 1; XModifier > -2; XModifier -= 2)
+	{
+		for (int YModifier = 1; YModifier > -2; YModifier -= 2)
+		{
+			FMatrixIndex CheckedTileIndex = FMatrixIndex(CurrentUnitTileIndex.IndexX + (XAxisShiftPriority * XModifier),
+				CurrentUnitTileIndex.IndexY + (YAxisShiftPriority * YModifier), CurrentUnitTileIndex.IndexZ);
+			bool IsAreaFree = true;
+
+			for (int x = 0; x < RelativeUnitSize.XLength; x++)
+			{
+				for (int y = 0; x < RelativeUnitSize.YWidth; y++)
+				{
+					for (int z = 0; z < RelativeUnitSize.ZHeight; z++)
+					{
+						FTileData CheckedTileData;
+						FMatrixIndex CheckedPartOfTheArea = CheckedTileIndex;
+						CheckedPartOfTheArea.IndexX -= x;
+						CheckedPartOfTheArea.IndexY -= y;
+						CheckedPartOfTheArea.IndexZ -= z;
+
+						if (!CombatGridManagerRef->TryGetTileDataByIndex(CheckedPartOfTheArea, CheckedTileData) || !CheckedTileData.bIsVoid || CheckedTileData.TileHolder != nullptr)
+						{
+							IsAreaFree = false;
+							break;
+						}
+					}
+
+					if (!IsAreaFree)
+					{
+						break;
+					}
+				}
+
+				if (!IsAreaFree)
+				{
+					break;
+				}
+			}
+
+			if (IsAreaFree)
+			{
+				OutNewUnitTileIndex = CheckedTileIndex;
+				return true;
+			}
+		}
+	}
+
+	return Result;
 }

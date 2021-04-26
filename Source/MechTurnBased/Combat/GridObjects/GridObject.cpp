@@ -73,3 +73,8 @@ TArray<UActionResult*> AGridObject::GetActionResultArray()
 
 	return Result;
 }
+
+bool AGridObject::TryToCrush(FMatrixIndex CrushedTile, FCombatUnitSize CrushingArea)
+{
+	return false;
+}

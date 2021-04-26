@@ -32,6 +32,14 @@ public:
 		bool TryToFall();
 	UFUNCTION()
 		void RespondToPush(ESightDirection PushDirection, int Power);
+	UFUNCTION()
+		FCombatUnitSize GetRelativeUnitSize();
+
+private:
+	UFUNCTION()
+		bool CheckIfUnitShouldFall(FMatrixIndex CurrentTileIndex, FCombatUnitSize RelativeUnitSize, TArray<FMatrixIndex>& OutMapPlatformsTileIndexes, bool& OutPlacementOutOfBounds);
+	UFUNCTION()
+		bool TryGetShiftedUnitTileIndex(FMatrixIndex CurrentUnitTileIndex, FCombatUnitSize RelativeUnitSize, int XAxisWeight, int YAxisWeight, FMatrixIndex& OutNewUnitTileIndex);
 
 public:
 	UPROPERTY(BlueprintReadWrite)

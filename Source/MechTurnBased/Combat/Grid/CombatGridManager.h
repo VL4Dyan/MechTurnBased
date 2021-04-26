@@ -54,5 +54,5 @@ public:
 		int ScanRangeZ = 10;
 
 private:
-	TArray<TArray<TArray<FTileData>>> GridMatrix; //The matrix structure should be changed
+	TArray<TArray<TArray<FTileData>>> GridMatrix; //The matrix structure should be changed; GC is not covering this
 };
