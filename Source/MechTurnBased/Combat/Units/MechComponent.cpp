@@ -1,6 +1,10 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "MechComponent.h"
+#include "ActionResult/DataUpdate/GridObjectComponentStateUpdate.h"
+#include "ActionResult/DataUpdate/TileDataUpdate.h"
+#include "ActionResult/TargetingResult/TargetingResult.h"
+#include "GridObjectUpdate.h"
 
 UMechComponent::UMechComponent()
 {
@@ -25,9 +29,14 @@ void UMechComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorC
 	// ...
 }
 
-void UMechComponent::SetComponentOwner(ACombatUnit* CombatUnit)
+void UMechComponent::UpdateComponentState(FGridObjectComponentState ComponentStateReplacement)
 {
-	MechComponentOwner = CombatUnit;
+	ComponentState = ComponentStateReplacement;
+
+	if (ComponentState.HullPoints <= 0)
+	{
+		bIsFunctional = false;
+	}
 }
 
 void UMechComponent::SetCollisionBoxRef(UBoxComponent* CollisionBox)
@@ -35,20 +44,10 @@ void UMechComponent::SetCollisionBoxRef(UBoxComponent* CollisionBox)
 	CollisionBoxRef = CollisionBox;
 }
 
-UBoxComponent* UMechComponent::GetCollisionRef()
-{
-	return CollisionBoxRef;
-}
-
 bool UMechComponent::TryGetSubComponents(TArray<UMechComponent*>& OutMechComponents)
 {
 	OutMechComponents = SubComponents;
 	return false;
-}
-
-void UMechComponent::UpdateMechComponentState(const FGridObjectComponentState& MechComponentStateReplacement)
-{
-
 }
 
 FGridObjectComponentState UMechComponent::GetMechComponentState()
@@ -68,6 +67,16 @@ FMatrixIndex UMechComponent::GetTileToHighlight()
 
 void UMechComponent::ExecuteAction(UTargetingResult* TargetingResult)
 {
-	MechComponentOwner->PerformAnimation(this, TargetingResult);
+	for (UGridObjectComponentStateUpdate* GridObjCompStateUpd : TargetingResult->GridObjectComponentUpdates)
+	{
+		FGridObjectUpdate GridObjectUpdate = FGridObjectUpdate();
+		GridObjectUpdate.VisualUpdateType = EGridObjectUpdateType::GOUT_Attack;
+		GridObjectUpdate.WorldLocationTargets.Add(GridObjCompStateUpd->GridObjectComponent->GetCollisionRef()->GetComponentLocation());
+		GridObjectUpdate.AffectedGridObjects.Add(GridObjCompStateUpd->GridObjectComponent->GetGridObjectComponentOwner());
+
+		GridObjectComponentOwner->AddGridObjectUpdate(GridObjectUpdate);
+	}
+
+	GridObjectComponentOwner->ExecuteNextGridObjectUpdate();
 }
 

@@ -18,7 +18,7 @@ public:
 
 	UFUNCTION()
 		void Initialize(AGridObject* GridObjectToSet);
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 		UComponentTargetingResult* AddComponentTarget(UGridObjectComponent* GridObjectComponentTarget);
 
 public:

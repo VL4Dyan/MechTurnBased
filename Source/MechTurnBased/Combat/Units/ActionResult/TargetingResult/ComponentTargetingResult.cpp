@@ -12,8 +12,10 @@ void UComponentTargetingResult::Initialize(UGridObjectComponent* GridObjectCompo
 	GridObjectComponent = GridObjectComponentToSet;
 }
 
-void UComponentTargetingResult::AddGridObjectComponentStateUpdate(UGridObjectComponent* GridObjCompRef)
+UGridObjectComponentStateUpdate* UComponentTargetingResult::AddGridObjectComponentStateUpdate(UGridObjectComponent* GridObjCompRef)
 {
 	UGridObjectComponentStateUpdate* GridObjCompStateUpd = NewObject<UGridObjectComponentStateUpdate>();
 	GridObjCompStateUpd->Initialize(GridObjCompRef);
+
+	return GridObjCompStateUpd;
 }

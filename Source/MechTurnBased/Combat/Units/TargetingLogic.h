@@ -11,6 +11,7 @@
 #include "../CombatMode.h"
 #include "../GridObjects/GridObjectComponent.h"
 #include "../GridObjects/GridObjectType.h"
+#include "../GridObjects/GridObject.h"
 #include "ActionResult/ActionResult.h"
 #include "ActionResult/TargetingResult/TileTargetingResult.h"
 #include "ActionResult/TargetingResult/ComponentTargetingResult.h"
@@ -26,13 +27,15 @@ public:
 	UTargetingLogic();
 
 	UFUNCTION(BlueprintCallable)
-		void SetTargetsInActionResultViaLineTrace(UActionResult* ActionResultToProcess, FMatrixIndex PositionToLookFrom, int Range);
+		void Initialize(UCombatGridManager* CombatGridManager);
+	//UFUNCTION(BlueprintCallable)
+	//	void SetTargetsInActionResultViaLineTrace(UActionResult* ActionResultToProcess, FMatrixIndex PositionToLookFrom, int Range);
+	UFUNCTION(BlueprintCallable)
+		TArray<AGridObject*> GetGridObjectsInRange(FMatrixIndex PositionToLookFrom, int Range, AGridObject* GridObjectToIgnore);
+	UFUNCTION(BlueprintCallable)
+		TArray<UGridObjectComponent*> GetTargetableGridObjectComponents(FMatrixIndex PositionToLookFrom, AGridObject* TargetGridObject, int Range);
 
 private:
-	UFUNCTION()
-		TArray<FMatrixIndex> GetTargetableIndexesInRange(FMatrixIndex PositionToLookFrom, int Range, bool bIgnoreTilesWithoutUnits);
-	UFUNCTION()
-		TArray<UGridObjectComponent*> GetTargetableGridObjectComponents(FMatrixIndex PositionToLookFrom, AGridObject* TargetGridObject, int Range);
 	UFUNCTION()
 		TArray <FVector> GetExecutionerSidePoints(FVector ExecutionerCentre, FVector TargetCentre);
 	UFUNCTION()
@@ -45,13 +48,13 @@ public:
 		float TraceSphereRadius = 5.0;
 	UPROPERTY(BlueprintReadWrite)
 		TEnumAsByte<ECollisionChannel> CollisionChannel = ECollisionChannel::ECC_GameTraceChannel1;
-	UPROPERTY(BlueprintReadWrite)
-		UCombatGridManager* CombatGridManagerRef = nullptr;
 
 private:
 	UPROPERTY()
-		float TileWidthLength = 100.0;
+		UCombatGridManager* CombatGridManager;
 	UPROPERTY()
-		float TileHeight = 100.0;
+		float TileWidthLength;
+	UPROPERTY()
+		float TileHeight;
 
 };

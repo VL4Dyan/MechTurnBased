@@ -24,6 +24,8 @@ public:
 	UMovementLogic();
 
 	UFUNCTION(BlueprintCallable)
+		void Initialize(UCombatGridManager* CombatGridManager);
+	UFUNCTION(BlueprintCallable)
 		void SetTargetsInActionResultViaMovementLogicProcessing(UActionResult* ActionResultToProcess, AGridObject* MovingGridObject, ESightDirection SightDirection, FCombatUnitSize UnitSize, FMatrixIndex StartTile, int Distance);
 	UFUNCTION(BlueprintCallable)
 		TArray<FMatrixIndex> GetPath(AGridObject* MovingGridObject, ESightDirection SightDirection, FCombatUnitSize UnitSize, FMatrixIndex StartTile, FMatrixIndex EndTile);
@@ -39,5 +41,5 @@ private:
 
 public:
 	UPROPERTY(BlueprintReadWrite)
-		UCombatGridManager* CombatGridManagerRef = nullptr;
+		UCombatGridManager* CombatGridManager = nullptr;
 };

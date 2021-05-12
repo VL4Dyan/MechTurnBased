@@ -39,7 +39,7 @@ void UGridObjectComponent::UpdateComponentState(FGridObjectComponentState Compon
 
 UBoxComponent* UGridObjectComponent::GetCollisionRef()
 {
-	return nullptr;
+	return CollisionBoxRef;
 }
 
 void UGridObjectComponent::SetCollisionRef(UBoxComponent* CollisionBoxRefToSet)
@@ -57,3 +57,12 @@ EGridObjectCompType UGridObjectComponent::GetComponentType()
 	return ComponentType;
 }
 
+void UGridObjectComponent::SetGridObjectComponentOwner(AGridObject* GridObjectComponentOwnerToSet)
+{
+	GridObjectComponentOwner = GridObjectComponentOwnerToSet;
+}
+
+AGridObject* UGridObjectComponent::GetGridObjectComponentOwner()
+{
+	return GridObjectComponentOwner;
+}

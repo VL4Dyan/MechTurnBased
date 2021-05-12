@@ -13,4 +13,6 @@ class MECHTURNBASED_API UCoreMechComponent : public UMechComponent
 
 public:
 	UCoreMechComponent();
+
+	virtual void UpdateComponentState(FGridObjectComponentState ComponentStateReplacement) override;
 };

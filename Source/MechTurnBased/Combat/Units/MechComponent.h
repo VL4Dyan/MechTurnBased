@@ -8,6 +8,7 @@ class UActionResult;
 #include "Components/ActorComponent.h"
 #include "Components/BoxComponent.h"
 #include "CombatUnit.h"
+#include "GridObjectUpdate.h"
 #include "../Grid/MatrixIndex.h"
 #include "../GridObjects/GridObjectComponentState.h"
 #include "../GridObjects/GridObjectComponent.h"
@@ -22,14 +23,11 @@ public:
 	UMechComponent();
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
-	virtual UBoxComponent* GetCollisionRef() override;
+	virtual FMatrixIndex GetTileToHighlight() override; //temp function
+	virtual void UpdateComponentState(FGridObjectComponentState ComponentStateReplacement) override;
 
-	UFUNCTION(BlueprintCallable)
-		void SetComponentOwner(ACombatUnit* CombatUnit);
 	UFUNCTION()
 		bool TryGetSubComponents(TArray<UMechComponent*>& OutMechComponents);
-	UFUNCTION()
-		void UpdateMechComponentState(const FGridObjectComponentState& MechComponentStateReplacement);
 	UFUNCTION()
 		FGridObjectComponentState GetMechComponentState();
 	UFUNCTION()
@@ -39,8 +37,6 @@ public:
 	UFUNCTION(BlueprintImplementableEvent)
 		UActionResult* GetActionResult();
 
-	virtual FMatrixIndex GetTileToHighlight() override; //temp function
-
 protected:
 	virtual void BeginPlay() override;
 
@@ -49,7 +45,7 @@ protected:
 
 protected:
 	UPROPERTY(BlueprintReadOnly)
-		ACombatUnit* MechComponentOwner = nullptr;
+		bool bIsFunctional = true;
 	UPROPERTY(BlueprintReadOnly)
 		FMatrixIndex ComponentFunctionalityPosition = FMatrixIndex(0, 0, 0);
 	UPROPERTY()

@@ -8,6 +8,8 @@ class UActionResult;
 #include "GameFramework/Character.h"
 #include "GridObjectType.h"
 #include "GridObjectComponent.h"
+#include "../Units/GridObjectUpdate.h"
+#include "../Units/CombatUnitSize.h"
 #include "GridObject.generated.h"
 
 UCLASS(Abstract, Blueprintable)
@@ -24,7 +26,7 @@ public:
 	UFUNCTION(BlueprintCallable)
 		EGridObjectType GetGridObjectType();
 	UFUNCTION()
-		TArray<FMatrixIndex> GetOccupiedTiles();
+		virtual TArray<FMatrixIndex> GetOccupiedTiles();
 	UFUNCTION(BlueprintCallable)
 		virtual TArray<UActionResult*> GetActionResultArray();
 	UFUNCTION()
@@ -39,14 +41,20 @@ public:
 		virtual TArray<UGridObjectComponent*> GetGridObjectComponentsOccupyingTileIndex(FMatrixIndex TileIndex);
 	UFUNCTION()
 		virtual bool TryToCrush(FMatrixIndex CrushedTile, FCombatUnitSize CrushingArea);
+	UFUNCTION()
+		void AddGridObjectUpdate(FGridObjectUpdate GridObjectUpdate);
+	UFUNCTION(BlueprintImplementableEvent)
+		void ExecuteNextGridObjectUpdate();
 
 protected:
 	virtual void BeginPlay() override;
 
+	UFUNCTION(BlueprintCallable)
+		bool TryGetNextGridObjectUpdate(FGridObjectUpdate& OutGridObjectUpdate);
+
 protected:
 	UPROPERTY(BlueprintReadOnly)
 		EGridObjectType GridObjectType;
-	UPROPERTY()
-		TArray<FMatrixIndex> OccupiedTiles;
-
+	UPROPERTY(BlueprintReadOnly)
+		TArray<FGridObjectUpdate> GridObjectUpdates;
 };

@@ -3,6 +3,7 @@
 #pragma once
 
 class UActionResult;
+class AGridObject;
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
@@ -29,17 +30,21 @@ public:
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
 
 	UFUNCTION(BlueprintCallable)
-		virtual FGridObjectComponentState GetComponentState();
-	UFUNCTION(BlueprintCallable)
 		virtual void UpdateComponentState(FGridObjectComponentState ComponentStateReplacement);
-	UFUNCTION()
-		virtual UBoxComponent* GetCollisionRef();
-	UFUNCTION(BlueprintCallable)
-		virtual void SetCollisionRef(UBoxComponent* CollisionBoxRefToSet);
 	UFUNCTION(BlueprintCallable)
 		virtual FMatrixIndex GetTileToHighlight(); //temp function
 	UFUNCTION(BlueprintCallable)
+		FGridObjectComponentState GetComponentState();
+	UFUNCTION()
+		UBoxComponent* GetCollisionRef();
+	UFUNCTION(BlueprintCallable)
+		void SetCollisionRef(UBoxComponent* CollisionBoxRefToSet);
+	UFUNCTION(BlueprintCallable)
 		EGridObjectCompType GetComponentType();
+	UFUNCTION(BlueprintCallable)
+		void SetGridObjectComponentOwner(AGridObject* GridObjectComponentOwnerToSet);
+	UFUNCTION()
+		AGridObject* GetGridObjectComponentOwner();
 
 protected:
 	virtual void BeginPlay() override;
@@ -53,5 +58,7 @@ public:
 protected:
 	UPROPERTY(BlueprintReadWrite)
 		EGridObjectCompType ComponentType = EGridObjectCompType::CompType_Other;
+	UPROPERTY(BlueprintReadOnly)
+		AGridObject* GridObjectComponentOwner;
 
 };

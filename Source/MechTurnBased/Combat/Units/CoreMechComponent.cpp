@@ -8,4 +8,14 @@ UCoreMechComponent::UCoreMechComponent()
 
 }
 
+void UCoreMechComponent::UpdateComponentState(FGridObjectComponentState ComponentStateReplacement)
+{
+	ComponentState = ComponentStateReplacement;
 
+	if (ComponentState.HullPoints <= 0)
+	{
+		FGridObjectUpdate MechComponentOwnerUpdate = FGridObjectUpdate();
+
+		MechComponentOwnerUpdate.VisualUpdateType = EGridObjectUpdateType::GOUT_Death;
+	}
+}

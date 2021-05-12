@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "CombatUnit.h"
+#include "CoreMechComponent.h"
 #include "MovementMechComponent/MovementMechComponent.h"
 #include "MechComponent.h"
 
@@ -36,7 +37,14 @@ void ACombatUnit::AddMechComponent(UMechComponent* MechComponent)
 	}
 	else
 	{
-		MechComponents.Add(MechComponent);
+		if (MechComponent->IsA<UCoreMechComponent>())
+		{
+			CoreMechComponent = Cast<UCoreMechComponent>(MechComponent);
+		}
+		else 
+		{
+			MechComponents.Add(MechComponent);
+		}
 	}
 }
 
@@ -100,21 +108,21 @@ TArray<UActionResult*> ACombatUnit::GetActionResultArray()
 	return Result;
 }
 
- TArray<UGridObjectComponent*> ACombatUnit::GetGridObjectComponentsOccupyingTileIndex(FMatrixIndex TileIndex)
+TArray<UGridObjectComponent*> ACombatUnit::GetGridObjectComponentsOccupyingTileIndex(FMatrixIndex TileIndex)
 {
-	 TArray<UGridObjectComponent*> Result;
+	TArray<UGridObjectComponent*> Result;
 
-	 Result.Append(MechComponents);
+	Result.Append(MechComponents);
 
-	 return Result;
+	return Result;
 }
 
- void ACombatUnit::DestroyCombatUnit()
- {
-	 this->Destroy();
- }
+void ACombatUnit::DestroyCombatUnit()
+{
+	this->Destroy();
+}
 
- bool ACombatUnit::TryPlaceCombatUnitOnTile(FMatrixIndex TileIndex)
- {
-	 return MovementMechComponent->TryAnchorUnitToTile(TileIndex);
- }
+bool ACombatUnit::TryPlaceCombatUnitOnTile(FMatrixIndex TileIndex)
+{
+	return MovementMechComponent->TryAnchorUnitToTile(TileIndex);
+}

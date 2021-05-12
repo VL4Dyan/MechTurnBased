@@ -14,7 +14,7 @@
 #include "MovementLogic.h"
 #include "MovementMechComponent.generated.h"
 
-UCLASS()
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent), Abstract, Blueprintable)
 class MECHTURNBASED_API UMovementMechComponent : public UMechComponent
 {
 	GENERATED_BODY()
@@ -44,7 +44,7 @@ private:
 public:
 	UPROPERTY(BlueprintReadWrite)
 		FMatrixIndex UnitTileIndex = FMatrixIndex(0, 0, 0);
-	UPROPERTY()
+	UPROPERTY(BlueprintReadWrite)
 		FCombatUnitSize UnitSize = FCombatUnitSize(1, 1, 2);
 	UPROPERTY(BlueprintReadWrite)
 		ESightDirection UnitViewDirection = ESightDirection::Direction_North;

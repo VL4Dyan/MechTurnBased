@@ -18,8 +18,8 @@ public:
 
 	UFUNCTION()
 		void Initialize(UGridObjectComponent* GridObjectComponentToSet);
-	UFUNCTION()
-		void AddGridObjectComponentStateUpdate(UGridObjectComponent* GridObjCompRef);
+	UFUNCTION(BlueprintCallable)
+		UGridObjectComponentStateUpdate* AddGridObjectComponentStateUpdate(UGridObjectComponent* GridObjCompRef);
 
 private:
 	UPROPERTY()

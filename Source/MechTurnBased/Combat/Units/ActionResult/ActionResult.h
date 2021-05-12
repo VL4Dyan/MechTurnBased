@@ -24,9 +24,9 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		void Initialize(UMechComponent* ExecutorComponentToSet);
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 		UTileTargetingResult* AddTileTarget(FMatrixIndex TargetTileIndex);
-	UFUNCTION()
+	UFUNCTION(BlueprintCallable)
 		UGridObjectTargetingResult* AddGridObjectTarget(AGridObject* TargetGridObject);
 	UFUNCTION(BlueprintCallable)
 		void GetUpdatesToProcess(TArray<UTileDataUpdate*>& OutTileDataUpdates, TArray<UGridObjectComponentStateUpdate*>& OutGridObjCompStateUpdates);

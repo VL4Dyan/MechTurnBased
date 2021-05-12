@@ -23,13 +23,13 @@ public:
 	UFUNCTION()
 		void ExecuteUpdate();
 
-private:
+public:
 	UPROPERTY()
 		bool bCorrectParameters = false;
+	UPROPERTY(BlueprintReadWrite)
+		FGridObjectComponentState GridObjectComponentStateReplacement;
+	UPROPERTY(BlueprintReadOnly)
+		FGridObjectComponentState OldGridObjectComponentState;
 	UPROPERTY()
 		UGridObjectComponent* GridObjectComponent;
-	UPROPERTY()
-		FGridObjectComponentState GridObjectComponentStateReplacement;
-	UPROPERTY()
-		FGridObjectComponentState OldGridObjectComponentState;
 };

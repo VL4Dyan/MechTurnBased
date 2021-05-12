@@ -7,6 +7,11 @@ UMovementLogic::UMovementLogic()
 
 }
 
+void UMovementLogic::Initialize(UCombatGridManager* CombatGridManagerToSet)
+{
+	CombatGridManager = CombatGridManagerToSet;
+}
+
 void UMovementLogic::SetTargetsInActionResultViaMovementLogicProcessing(UActionResult* ActionResultToProcess, AGridObject* MovingGridObject, ESightDirection SightDirection, FCombatUnitSize UnitSize, FMatrixIndex StartTile, int Distance)
 {
 	TArray<FMatrixIndex> EndLocations = GetAllEndLocations(MovingGridObject, SightDirection, UnitSize, StartTile, Distance);
@@ -61,7 +66,7 @@ TArray<FMatrixIndex> UMovementLogic::GetAllEndLocations(AGridObject* MovingGridO
 								CurrIndex.IndexY -= y;
 								CurrIndex.IndexZ += z;
 
-								if (!(CombatGridManagerRef->TryGetTileDataByIndex(CurrIndex, CurrTileData) && (CurrTileData.TileHolder == nullptr || CurrTileData.TileHolder == MovingGridObject)))
+								if (!(CombatGridManager->TryGetTileDataByIndex(CurrIndex, CurrTileData) && (CurrTileData.TileHolder == nullptr || CurrTileData.TileHolder == MovingGridObject)))
 								{
 									bIsAreaFree = false;
 									break;
@@ -110,9 +115,9 @@ TArray<FMatrixIndex> UMovementLogic::GetNeighbouringTiles(FMatrixIndex TileIndex
 				FMatrixIndex PlatformIndex = FMatrixIndex(TileIndex.IndexX - x, TileIndex.IndexY - y, TileIndex.IndexZ - 1);
 				FTileData CheckedTileData, PlatformTileData;
 
-				if (CheckedTileIndex != TileIndex && CombatGridManagerRef->TryGetTileDataByIndex(CheckedTileIndex, CheckedTileData) && CheckedTileData.bIsVoid
+				if (CheckedTileIndex != TileIndex && CombatGridManager->TryGetTileDataByIndex(CheckedTileIndex, CheckedTileData) && CheckedTileData.bIsVoid
 					&& (CheckedTileData.TileHolder == nullptr || CheckedTileData.TileHolder == GridObjectToIgnore)
-					&& CombatGridManagerRef->TryGetTileDataByIndex(PlatformIndex, PlatformTileData) && !PlatformTileData.bIsVoid)
+					&& CombatGridManager->TryGetTileDataByIndex(PlatformIndex, PlatformTileData) && !PlatformTileData.bIsVoid)
 				{
 					Result.Add(CheckedTileIndex);
 				}
@@ -131,10 +136,10 @@ TArray<FMatrixIndex> UMovementLogic::GetNeighbouringTiles(FMatrixIndex TileIndex
 				FMatrixIndex PlatformIndex = FMatrixIndex(TileIndex.IndexX - x, TileIndex.IndexY - y, TileIndex.IndexZ - 2);
 				FMatrixIndex PotentialObstacleIndex = FMatrixIndex(TileIndex.IndexX - x, TileIndex.IndexY - y, TileIndex.IndexZ);
 				FTileData CheckedTileData, PotentialObstacleTileData, PlatformTileData;
-				if (CombatGridManagerRef->TryGetTileDataByIndex(CheckedTileIndex, CheckedTileData) && CheckedTileData.bIsVoid
+				if (CombatGridManager->TryGetTileDataByIndex(CheckedTileIndex, CheckedTileData) && CheckedTileData.bIsVoid
 					&& (CheckedTileData.TileHolder == nullptr || CheckedTileData.TileHolder == GridObjectToIgnore)
-					&& CombatGridManagerRef->TryGetTileDataByIndex(PotentialObstacleIndex, PotentialObstacleTileData) && PotentialObstacleTileData.bIsVoid
-					&& CombatGridManagerRef->TryGetTileDataByIndex(PlatformIndex, PlatformTileData) && !PlatformTileData.bIsVoid)
+					&& CombatGridManager->TryGetTileDataByIndex(PotentialObstacleIndex, PotentialObstacleTileData) && PotentialObstacleTileData.bIsVoid
+					&& CombatGridManager->TryGetTileDataByIndex(PlatformIndex, PlatformTileData) && !PlatformTileData.bIsVoid)
 				{
 					Result.Add(CheckedTileIndex);
 				}
@@ -153,10 +158,10 @@ TArray<FMatrixIndex> UMovementLogic::GetNeighbouringTiles(FMatrixIndex TileIndex
 				FMatrixIndex PlatformIndex = FMatrixIndex(TileIndex.IndexX - x, TileIndex.IndexY - y, TileIndex.IndexZ);
 				FMatrixIndex PotentialObstacleIndex = FMatrixIndex(TileIndex.IndexX, TileIndex.IndexY, TileIndex.IndexZ + 1);
 				FTileData CheckedTileData, PotentialObstacleTileData, PlatformTileData;
-				if (CombatGridManagerRef->TryGetTileDataByIndex(CheckedTileIndex, CheckedTileData) && CheckedTileData.bIsVoid
+				if (CombatGridManager->TryGetTileDataByIndex(CheckedTileIndex, CheckedTileData) && CheckedTileData.bIsVoid
 					&& (CheckedTileData.TileHolder == nullptr || CheckedTileData.TileHolder == GridObjectToIgnore)
-					&& CombatGridManagerRef->TryGetTileDataByIndex(PotentialObstacleIndex, PotentialObstacleTileData) && PotentialObstacleTileData.bIsVoid
-					&& CombatGridManagerRef->TryGetTileDataByIndex(PlatformIndex, PlatformTileData) && !PlatformTileData.bIsVoid)
+					&& CombatGridManager->TryGetTileDataByIndex(PotentialObstacleIndex, PotentialObstacleTileData) && PotentialObstacleTileData.bIsVoid
+					&& CombatGridManager->TryGetTileDataByIndex(PlatformIndex, PlatformTileData) && !PlatformTileData.bIsVoid)
 				{
 					Result.Add(CheckedTileIndex);
 				}
@@ -198,7 +203,7 @@ TArray<UPathNode*> UMovementLogic::GetNeighbouringPathNodes(AGridObject* MovingG
 					CurrIndex.IndexY -= y;
 					CurrIndex.IndexZ += z;
 
-					if (!(CombatGridManagerRef->TryGetTileDataByIndex(CurrIndex, CurrTileData) && (CurrTileData.TileHolder == nullptr || CurrTileData.TileHolder == MovingGridObject)))
+					if (!(CombatGridManager->TryGetTileDataByIndex(CurrIndex, CurrTileData) && (CurrTileData.TileHolder == nullptr || CurrTileData.TileHolder == MovingGridObject)))
 					{
 						bIsAreaFree = false;
 						break;

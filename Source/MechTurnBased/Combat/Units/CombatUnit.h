@@ -5,6 +5,7 @@
 class UMechComponent;
 class UTargetingResult;
 class UMovementMechComponent;
+class UCoreMechComponent;
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
@@ -31,10 +32,6 @@ public:
 	virtual TArray<UActionResult*> GetActionResultArray() override;
 	virtual TArray<UGridObjectComponent*> GetGridObjectComponents() override;
 
-	UFUNCTION(BlueprintImplementableEvent)
-		void MoveAlongPath(const TArray<FVector>& Path);
-	UFUNCTION(BlueprintImplementableEvent)
-		void PerformAnimation(UMechComponent* ComponentExecutor, UTargetingResult* ResultsToVisualize);
 	UFUNCTION()
 		bool TryPlaceCombatUnitOnTile(FMatrixIndex TileIndex);
 	UFUNCTION()
@@ -55,10 +52,12 @@ protected:
 public:
 	UPROPERTY(BlueprintReadWrite)
 		ETeams UnitOwner = ETeams::Team_Player;
-	UPROPERTY(BlueprintReadWrite)
-		TArray<UMechComponent*> MechComponents;
 
-private:
-	UPROPERTY()
-		UMovementMechComponent* MovementMechComponent = nullptr;
+protected:
+	UPROPERTY(BlueprintReadOnly)
+		TArray<UMechComponent*> MechComponents;
+	UPROPERTY(BlueprintReadOnly)
+		UCoreMechComponent* CoreMechComponent;
+	UPROPERTY(BlueprintReadOnly)
+		UMovementMechComponent* MovementMechComponent;
 };

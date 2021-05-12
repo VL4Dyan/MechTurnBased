@@ -34,7 +34,9 @@ EGridObjectType AGridObject::GetGridObjectType()
 
 TArray<FMatrixIndex> AGridObject::GetOccupiedTiles()
 {
-	return OccupiedTiles;
+	TArray<FMatrixIndex> Result;
+
+	return Result;
 }
 
 bool AGridObject::TryToFall()
@@ -77,4 +79,23 @@ TArray<UActionResult*> AGridObject::GetActionResultArray()
 bool AGridObject::TryToCrush(FMatrixIndex CrushedTile, FCombatUnitSize CrushingArea)
 {
 	return false;
+}
+
+void AGridObject::AddGridObjectUpdate(FGridObjectUpdate GridObjectUpdate)
+{
+	GridObjectUpdates.Add(GridObjectUpdate);
+}
+
+bool AGridObject::TryGetNextGridObjectUpdate(FGridObjectUpdate& OutGridObjectUpdate)
+{
+	if (GridObjectUpdates.Num() > 0)
+	{
+		OutGridObjectUpdate = GridObjectUpdates[0];
+		GridObjectUpdates.RemoveAt(0);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }

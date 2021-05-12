@@ -28,7 +28,7 @@ void UMovementMechComponent::ExecuteAction(UTargetingResult* TargetingResult)
 	{
 		UTileTargetingResult* TileTargetingResult = Cast<UTileTargetingResult>(TargetingResult);
 
-		TArray<FMatrixIndex> PathOfTiles = MovementLogicRef->GetPath(MechComponentOwner, UnitViewDirection, UnitSize, UnitTileIndex, TileTargetingResult->TileIndex);
+		TArray<FMatrixIndex> PathOfTiles = MovementLogicRef->GetPath(GridObjectComponentOwner, UnitViewDirection, UnitSize, UnitTileIndex, TileTargetingResult->TileIndex);
 		FMatrixIndex TargetTileIndex = TileTargetingResult->TileIndex;
 		TArray<FVector> Path;
 		float TileWidthLength, TileHeight;
@@ -77,13 +77,15 @@ void UMovementMechComponent::ExecuteAction(UTargetingResult* TargetingResult)
 					FTileData CurrTileData;
 
 					CombatGridManagerRef->TryGetTileDataByIndex(TileIndex, CurrTileData);
-					CurrTileData.TileHolder = MechComponentOwner;
+					CurrTileData.TileHolder = GridObjectComponentOwner;
 					CombatGridManagerRef->TryUpdateTileData(TileIndex, CurrTileData);
 				}
 			}
 		}
 
-		MechComponentOwner->MoveAlongPath(Path);
+		FGridObjectUpdate GridObjectUpdate = FGridObjectUpdate();
+
+		GridObjectComponentOwner->AddGridObjectUpdate(GridObjectUpdate);
 	}
 }
 
@@ -164,7 +166,9 @@ bool UMovementMechComponent::TryToFall()
 	{
 		if (PlacementOutOfBounds)
 		{
-			MechComponentOwner->DestroyCombatUnit();
+			FGridObjectUpdate GridObjectUpdate = FGridObjectUpdate();
+
+			GridObjectComponentOwner->AddGridObjectUpdate(GridObjectUpdate);
 			break;
 		}
 
@@ -240,7 +244,9 @@ bool UMovementMechComponent::TryToFall()
 			}
 			else
 			{
-				MechComponentOwner->DestroyCombatUnit();
+				FGridObjectUpdate GridObjectUpdate = FGridObjectUpdate();
+
+				GridObjectComponentOwner->AddGridObjectUpdate(GridObjectUpdate);
 			}
 		}
 		else
@@ -322,7 +328,7 @@ bool UMovementMechComponent::TryAnchorUnitToTile(FMatrixIndex TileIndex)
 
 					if (CombatGridManagerRef->TryGetTileDataByIndex(CurrentTileIndex, CurrentTileData))
 					{
-						CurrentTileData.TileHolder = MechComponentOwner;
+						CurrentTileData.TileHolder = GridObjectComponentOwner;
 						CombatGridManagerRef->TryUpdateTileData(CurrentTileIndex, CurrentTileData);
 					}
 				}

@@ -8,7 +8,13 @@ UTargetingLogic::UTargetingLogic()
 
 }
 
-void UTargetingLogic::SetTargetsInActionResultViaLineTrace(UActionResult* ActionResultToProcess, FMatrixIndex PositionToLookFrom, int Range)
+void UTargetingLogic::Initialize(UCombatGridManager* CombatGridManagerToSet)
+{
+	CombatGridManager = CombatGridManagerToSet;
+	CombatGridManager->GetTileMeasurments(TileWidthLength, TileHeight);
+}
+
+/*void UTargetingLogic::SetTargetsInActionResultViaLineTrace(UActionResult* ActionResultToProcess, FMatrixIndex PositionToLookFrom, int Range)
 {
 	TArray<FMatrixIndex> PotentiallyTargetableTiles;
 	PotentiallyTargetableTiles.Append(GetTargetableIndexesInRange(PositionToLookFrom, Range, true));
@@ -17,7 +23,7 @@ void UTargetingLogic::SetTargetsInActionResultViaLineTrace(UActionResult* Action
 	for (FMatrixIndex TileIndex : PotentiallyTargetableTiles)
 	{
 		FTileData TileData;
-		CombatGridManagerRef->TryGetTileDataByIndex(TileIndex, TileData);
+		CombatGridManager->TryGetTileDataByIndex(TileIndex, TileData);
 
 		if (TileData.TileHolder != nullptr && !PotentiallyTargetableGridObjects.Contains(TileData.TileHolder))
 		{
@@ -39,7 +45,7 @@ void UTargetingLogic::SetTargetsInActionResultViaLineTrace(UActionResult* Action
 			}
 		}
 	}
-}
+}*/
 
 TArray<UGridObjectComponent*> UTargetingLogic::GetTargetableGridObjectComponents(FMatrixIndex PositionToLookFrom, AGridObject* TargetGridObject, int Range)
 {
@@ -47,7 +53,7 @@ TArray<UGridObjectComponent*> UTargetingLogic::GetTargetableGridObjectComponents
 	FTileData ExecutionerTileData;
 	TArray<UGridObjectComponent*> GridObjectComponents;
 
-	CombatGridManagerRef->TryGetTileDataByIndex(PositionToLookFrom, ExecutionerTileData);
+	CombatGridManager->TryGetTileDataByIndex(PositionToLookFrom, ExecutionerTileData);
 
 	GridObjectComponents = TargetGridObject->GetGridObjectComponents();
 
@@ -134,9 +140,9 @@ TArray<FVector> UTargetingLogic::GetExecutionerSidePoints(FVector ExecutionerCen
 	return Result;
 }
 
-TArray<FMatrixIndex> UTargetingLogic::GetTargetableIndexesInRange(FMatrixIndex PositionToLookFrom, int Range, bool bIgnoreTilesWithoutUnits)
+TArray<AGridObject*> UTargetingLogic::GetGridObjectsInRange(FMatrixIndex PositionToLookFrom, int Range, AGridObject* GridObjectToIgnore)
 {
-	TArray<FMatrixIndex> Result;
+	TArray<AGridObject*> Result;
 
 	for (int x = PositionToLookFrom.IndexX - Range; x <= PositionToLookFrom.IndexX + Range; x++)
 	{
@@ -144,14 +150,11 @@ TArray<FMatrixIndex> UTargetingLogic::GetTargetableIndexesInRange(FMatrixIndex P
 		{
 			for (int z = PositionToLookFrom.IndexZ - Range; z <= PositionToLookFrom.IndexZ + Range; z++)
 			{
-				FMatrixIndex Indexes(x, y, z);
-				FTileData TileData;
-				if (Indexes != PositionToLookFrom && CombatGridManagerRef->TryGetTileDataByIndex(Indexes, TileData))
+				FMatrixIndex TileIndex(x, y, z);
+				FTileData CurrentTileData;
+				if (CombatGridManager->TryGetTileDataByIndex(TileIndex, CurrentTileData) && CurrentTileData.TileHolder != GridObjectToIgnore && !Result.Contains(CurrentTileData.TileHolder))
 				{
-					if (TileData.bIsVoid == false && (!bIgnoreTilesWithoutUnits || TileData.TileHolder != nullptr))
-					{
-						Result.Add(Indexes);
-					}
+					Result.Add(CurrentTileData.TileHolder);
 				}
 			}
 		}
